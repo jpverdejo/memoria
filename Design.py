@@ -2,419 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import wx
-import wx.grid
 import wx.lib.agw.floatspin as FS
-import math
 import itertools
-import operator
+
+from bitMapGrid import BitMapGrid
+from cubes import SC, FCC, BCC
+from atomsCanvas import AtomsCanvas
 
 from pprint import pprint
 
-class BitMapGrid(wx.grid.Grid):
-    def __init__(self, parent):
-        
-        self.parent = parent
-
-        self.rows = 10
-        self.cols = 10
-
-        self.width = 560
-        self.height = 575
-
-        wx.grid.Grid.__init__(self, parent, -1, size=(self.width,self.height))
-        
-        self.cells = [[0 for x in xrange(self.cols)] for x in xrange(self.rows)]
-
-        self.calcCellSize()
-
-        self.SetWindowStyleFlag( self.GetWindowStyle() & ~ wx.HSCROLL );
-        self.SetCellHighlightPenWidth(0)
-        self.SetRowLabelSize(0)
-        self.SetColLabelSize(0)
-        self.EnableEditing(False)
-        self.DisableDragGridSize()
-
-        self.CreateGrid(self.rows, self.cols)
-
-        self.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.onSelectCell)
-        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_CLICK, self.onClickCell)
-        self.Bind(wx.grid.EVT_GRID_RANGE_SELECT, self.onSelectRange)
-        self.Bind(wx.EVT_CHAR_HOOK, self.disableKeyboard)
-
-    def calcCellSize(self):
-        self.rowSize = math.ceil(self.height/self.rows)
-        self.colSize = math.ceil(self.width/self.cols)
-
-        self.cellSize = min(self.rowSize, self.colSize)
-        
-        self.SetDefaultColSize(self.cellSize)
-        self.SetDefaultRowSize(self.cellSize)
-
-    def updateSize(self):
-        self.calcCellSize()
-        newCells = [[0 for x in xrange(self.cols)] for x in xrange(self.rows)]
-
-
-        colsDiff = self.cols - self.GetNumberCols()
-        rowsDiff = self.rows - self.GetNumberRows()
-
-        if colsDiff > 0:
-            self.AppendCols(colsDiff)
-        if colsDiff < 0:
-            self.DeleteCols(0, (-1 * colsDiff))
-        if rowsDiff > 0:
-            self.AppendRows(rowsDiff)
-        if rowsDiff < 0:
-            self.DeleteRows(0, (-1 * rowsDiff))
-
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                value = 0
-                
-                try:
-                    value = self.cells[i][j]
-                except IndexError:
-                    pass
-
-                newCells[i][j] = value
-
-                if value == 1:
-                    self.SetCellBackgroundColour(i, j, "BLACK")
-                else:
-                    self.SetCellBackgroundColour(i, j, "WHITE")
-
-        self.cells = newCells
-
-
-    def onSelectCell(self, evt):
-        x = evt.GetRow()
-        y = evt.GetCol()
-
-        self.lastSelected = [x, y]
-
-        self.toggleCell(x, y)
-        evt.Skip()
-
-    def onClickCell(self, evt):
-        x = evt.GetRow()
-        y = evt.GetCol()
-        
-        self.lastClicked = [x, y]
-
-        evt.Skip()
-
-    def onSelectRange(self, evt):
-        if evt.Selecting():
-            topLeft = evt.GetTopLeftCoords()
-            bottomRight = evt.GetBottomRightCoords()
-
-            rowStart = topLeft.GetRow()
-            colStart = topLeft.GetCol()
-
-            rowEnd = bottomRight.GetRow()
-            colEnd = bottomRight.GetCol()
-
-            for i in xrange(rowStart, rowEnd+1):
-                for j in xrange(colStart, colEnd+1):
-                    if not (i == self.GetGridCursorRow() and j==self.GetGridCursorCol() and self.lastClicked == self.lastSelected):
-                        self.toggleCell(i, j)
-
-            evt.Skip()
-        
-
-    def toggleCell(self, x, y):
-        if self.cells[x][y] == 0:
-            self.cells[x][y] = 1
-            self.SetCellBackgroundColour(x, y, "BLACK")
-        else:
-            self.cells[x][y] = 0
-            self.SetCellBackgroundColour(x, y, "WHITE")
-
-        self.ClearSelection()
-        self.ForceRefresh()
-        self.parent.updateParameters()
-
-    def getWidth(self):
-        left = right = None
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                if self.cells[i][j] == 1:
-                    if left == None or j < left:
-                        left = j
-                    if right == None or j > right:
-                        right = j
-
-        if left != None and right != None:
-            return right - left + 1
-        return 0
-
-    def first_point(self):
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                if self.cells[i][j] == 1:
-                    return [i, j]
-
-        return None
-
-    def find_group(self, point):
-        key = "_".join(str(x) for x in point)
-        
-        if not key in self.group:
-            self.group.append(key)
-
-            deltas = itertools.permutations([-1,0,1], 2)
-            
-            for delta in deltas:
-                next_point = map(operator.add, point, delta)
-                next_key = "_".join(str(x) for x in next_point)
-
-                if next_point[0] < 0 or next_point[1] < 0:
-                    continue
-                if next_key in self.group:
-                    continue
-                if self.cells[next_point[0]][next_point[1]]:
-                    self.find_group(next_point)
-
-    def valid(self):
-
-        point = self.first_point()
-
-        if point == None:
-            return False #Empty array
-
-        self.group = []
-        self.find_group(point)
-
-        for i in xrange(self.rows):
-            for j in xrange(self.cols):
-                if self.cells[i][j] == 1:
-                    key = "%s_%s" % (i,j)
-                    if not key in self.group:
-                        return False
-
-
-        return True
-    
-    def disableKeyboard(self, evt):
-        pass
-
-class SC:
-
-    def __init__(self, configs):
-        self.configs = configs
-
-        self.top_layer = []
-
-        self.atoms = {}
-        self.atom_per_position = {}
-
-        self.neighborhood = {}
-
-    def calculate(self):
-        i = j = -1
-        deltas = [[0, 0], [0, 1], [1, 0], [1, 1]]
-        
-        for row in self.configs['cells']:
-            j = -1
-            i += 1
-
-            for cell in row:
-                j += 1 #Cell i,j
-                point = [i, j]
-
-                if cell == 1:
-                    for delta in deltas:
-                        atom = tuple(map(operator.add, point, delta))
-                        self.top_layer.append(atom)
-
-
-        # Remove duplicates
-        self.top_layer = sorted(set(self.top_layer))
-
-        # Add Z position to atoms
-        atom_id = -1
-
-        for z in xrange(self.configs['layers'] + 1):
-            for atom in self.top_layer:
-                atom += z, # add Z position
-                
-                atom_id += 1 #increment atom_id
-                atom_key = "_".join(str(x) for x in atom)
-
-                self.atoms[str(atom_id)] = atom
-                self.atom_per_position[atom_key] = atom_id
-
-        self.find_neighborhood()
-
-    def find_neighborhood(self):
-        deltas = [[-1,0,0], [1,0,0], [0,-1,0], [0,1,0],[0,0,-1],[0,0,1]]
-
-        for atom_id, atom in self.atoms.iteritems():
-            neighbors = []
-            for delta in deltas:
-                neighbor = tuple(map(operator.add, atom, delta))
-                neighbor_key = "_".join(str(x) for x in neighbor)
-
-                if neighbor_key in self.atom_per_position.keys():
-                    neighbors.append(self.atom_per_position[neighbor_key])
-
-            self.neighborhood[atom_id] = neighbors
-
-
-class BCC:
-
-    def __init__(self, configs):
-        self.configs = configs
-
-        self.top_layer = []
-        self.intermediate_layer = []
-
-        self.atoms = {}
-        self.atom_per_position = {}
-
-        self.neighborhood = {}
-
-    def calculate(self):
-        i = j = -1
-        deltas = [[0, 0], [0, 1], [1, 0], [1, 1]]
-        
-        for row in self.configs['cells']:
-            j = -1
-            i += 1
-
-            for cell in row:
-                j += 1 #Cell i,j
-                point = [i, j]
-
-                if cell == 1:
-                    self.intermediate_layer.append((i+0.5, j+0.5))
-
-                    for delta in deltas:
-                        atom = tuple(map(operator.add, point, delta))
-                        self.top_layer.append(atom)
-
-
-        # Remove duplicates
-        self.top_layer = sorted(set(self.top_layer))
-
-        # Add Z position to atoms
-        atom_id = -1
-
-        for z in xrange(int(math.ceil(float(self.configs['layers']) / 2))):
-            for atom in self.top_layer:
-                atom += z, # add Z position
-                
-                atom_id += 1 #increment atom_id
-                atom_key = "_".join(str(x) for x in atom)
-
-                self.atoms[atom_id] = atom
-                self.atom_per_position[atom_key] = atom_id
-
-        for z in xrange(int(math.floor(float(self.configs['layers']) / 2))):
-            for atom in self.intermediate_layer:
-                atom += (z + 0.5), # add Z position
-                
-                atom_id += 1 #increment atom_id
-                atom_key = "_".join(str(x) for x in atom)
-
-                self.atoms[atom_id] = atom
-                self.atom_per_position[atom_key] = atom_id
-
-    def find_neighborhood(self):
-        deltas = [
-        [0.5, 0.5, 0.5], [0.5, -0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, -0.5, 0.5],
-        [0.5, 0.5, -0.5], [0.5, -0.5, -0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, -0.5]]
-
-        for atom_id, atom in self.atoms.iteritems():
-            neighbors = []
-            for delta in deltas:
-                neighbor = tuple(map(operator.add, atom, delta))
-                neighbor_key = "_".join(str(x) for x in neighbor)
-
-                if neighbor_key in self.atom_per_position.keys():
-                    neighbors.append(self.atom_per_position[neighbor_key])
-
-            self.neighborhood[atom_id] = neighbors
-                
-class FCC:
-
-    def __init__(self, configs):
-        self.configs = configs
-
-        self.top_layer = []
-        self.intermediate_layer = []
-
-        self.atoms = {}
-        self.atom_per_position = {}
-
-        self.neighborhood = {}
-
-    def calculate(self):
-        i = j = -1
-        top_deltas = [[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0.5]]
-        intermediate_deltas = [[0, 0.5], [0.5, 1], [1, 0.5], [0.5, 0]]
-        
-        for row in self.configs['cells']:
-            j = -1
-            i += 1
-
-            for cell in row:
-                j += 1 #Cell i,j
-                point = [i, j]
-
-                if cell == 1:
-                    for delta in top_deltas:
-                        atom = tuple(map(operator.add, point, delta))
-                        self.top_layer.append(atom)
-
-                    for delta in intermediate_deltas:
-                        atom = tuple(map(operator.add, point, delta))
-                        self.intermediate_layer.append(atom)
-
-
-        # Remove duplicates
-        self.top_layer = sorted(set(self.top_layer))
-        self.intermediate_layer = sorted(set(self.intermediate_layer))
-
-        # Add Z position to atoms
-        atom_id = -1
-
-        for z in xrange(int(math.ceil(float(self.configs['layers']) / 2))):
-            for atom in self.top_layer:
-                atom += z, # add Z position
-                
-                atom_id += 1 #increment atom_id
-                atom_key = "_".join(str(x) for x in atom)
-
-                self.atoms[atom_id] = atom
-                self.atom_per_position[atom_key] = atom_id
-
-        for z in xrange(int(math.floor(float(self.configs['layers']) / 2))):
-            for atom in self.intermediate_layer:
-                atom += (z + 0.5), # add Z position
-                
-                atom_id += 1 #increment atom_id
-                atom_key = "_".join(str(x) for x in atom)
-
-                self.atoms[atom_id] = atom
-                self.atom_per_position[atom_key] = atom_id
-
-    def find_neighborhood(self):
-        deltas = [
-        [0, 0.5, 0.5], [0, 0.5, -0.5], [0, -0.5, 0.5], [0, -0.5, -0.5],
-        [0.5, 0, 0.5], [0.5, 0, -0.5], [-0.5, 0, 0.5], [-0.5, 0, -0.5],
-        [0.5, 0.5, 0], [0.5, -0.5, 0], [-0.5, 0.5, 0], [-0.5, -0.5, 0]]
-
-        for atom_id, atom in self.atoms.iteritems():
-            neighbors = []
-            for delta in deltas:
-                neighbor = tuple(map(operator.add, atom, delta))
-                neighbor_key = "_".join(str(x) for x in neighbor)
-
-                if neighbor_key in self.atom_per_position.keys():
-                    neighbors.append(self.atom_per_position[neighbor_key])
-
-            self.neighborhood[atom_id] = neighbors
 
 class Design(wx.Frame):
     title = "Design"
@@ -423,7 +19,8 @@ class Design(wx.Frame):
 
     def __init__(self, parent):
         wx.Frame.__init__(self, None, -1, self.title)
-        self.SetSize((800,600))
+        self.SetSize((800,800))
+
         self.Show()
 
         self.drawSidebar()
@@ -432,20 +29,20 @@ class Design(wx.Frame):
         layout = wx.BoxSizer(wx.HORIZONTAL)
         
         sidebar = wx.BoxSizer(wx.VERTICAL)
-        content = wx.BoxSizer(wx.VERTICAL)
+        self.content = content = wx.BoxSizer(wx.VERTICAL)
 
         self.grid = BitMapGrid(self)
-
+        self.canvas = AtomsCanvas(self)
 
         #Grid size
         self.sizeBox = wx.StaticBox(self, label='Grid size', size=(190, 200))
         self.sizeBoxSizer = wx.StaticBoxSizer(self.sizeBox, wx.VERTICAL)
 
-        self.sizeBoxGrid = wx.GridSizer(2, 2, 10, 10)
+        self.sizeBoxGrid = wx.GridSizer(1, 4, 10, 10)
 
-        self.sizeBoxWidthLabel = wx.StaticText(self, label="Width", size=(70, 20))
+        self.sizeBoxWidthLabel = wx.StaticText(self, label="Width")
         self.sizeBoxWidthCtrl = wx.SpinCtrl(self, value=str(self.grid.cols), initial=self.grid.cols, min=0, size=(50, 20))
-        self.sizeBoxHeightLabel = wx.StaticText(self, label="Height", size=(70, 20))
+        self.sizeBoxHeightLabel = wx.StaticText(self, label="Height")
         self.sizeBoxHeightCtrl = wx.SpinCtrl(self, value=str(self.grid.rows), initial=self.grid.rows, min=0, size=(50, 20))
 
         self.sizeBoxGrid.AddMany([
@@ -464,7 +61,7 @@ class Design(wx.Frame):
         self.configBox = wx.StaticBox(self, label='Object parameters', size=(190,200))
         self.configBoxSizer = wx.StaticBoxSizer(self.configBox, wx.VERTICAL)
 
-        self.configBoxGrid = wx.GridSizer(8, 2, 10, 10)
+        self.configBoxGrid = wx.GridSizer(10, 2, 10, 10)
 
         # Number of layers
         self.configBoxLayersLabel = wx.StaticText(self, label="Layers", size=(70,20))
@@ -488,23 +85,30 @@ class Design(wx.Frame):
 
         # Net constant
         self.configBoxNetConstantLabel = wx.StaticText(self, label="Net constant")
-        self.configBoxNetConstantCtrl = FS.FloatSpin(self, -1, min_val=0, increment=0.1, value=0.1, agwStyle=FS.FS_LEFT)
+        self.configBoxNetConstantCtrl = FS.FloatSpin(self, -1, min_val=0, increment=0.1, value=0.28, agwStyle=FS.FS_LEFT)
         self.configBoxNetConstantCtrl.SetFormat("%f")
         self.configBoxNetConstantCtrl.SetDigits(5)
 
         self.configBoxNetConstantCtrl.Bind(FS.EVT_FLOATSPIN, self.updateParametersProxy)
 
         # Size
-        self.configBoxWidthLabel = wx.StaticText(self, label="Width (nm)", size=(70, 20))
-        self.configBoxWidthCtrl = FS.FloatSpin(self, -1, min_val=0.1, increment=0.1, value=10, agwStyle=FS.FS_LEFT)
-        self.configBoxWidthCtrl.SetFormat("%f")
-        self.configBoxWidthCtrl.SetDigits(2)
+        self.configBoxHeightLabel = wx.StaticText(self, label="Height (nm)", size=(70, 20))
+        self.configBoxHeightCtrl = FS.FloatSpin(self, -1, min_val=0.1, increment=0.1, value=10, agwStyle=FS.FS_LEFT)
+        self.configBoxHeightCtrl.SetFormat("%f")
+        self.configBoxHeightCtrl.SetDigits(2)
 
-        self.configBoxWidthCtrl.Bind(FS.EVT_FLOATSPIN, self.updateParametersProxy)
+        self.configBoxHeightCtrl.Bind(FS.EVT_FLOATSPIN, self.updateParametersProxy)
+
+        # Sizes
+        self.configBoxWidthLabel = wx.StaticText(self, label="Width (nm)", size=(70, 20))
+        self.configBoxWidthValue = wx.StaticText(self, label="--", size=(70, 20))
+        self.configBoxLengthLabel = wx.StaticText(self, label="Length (nm)", size=(70, 20))
+        self.configBoxLengthValue = wx.StaticText(self, label="--", size=(70, 20))
+
 
         # Scaling
         self.configBoxEtaLabel = wx.StaticText(self, label="Eta", size=(70, 20))
-        self.configBoxEtaCtrl = FS.FloatSpin(self, -1, min_val=0, increment=0.1, value=0.1, agwStyle=FS.FS_LEFT)
+        self.configBoxEtaCtrl = FS.FloatSpin(self, -1, min_val=0, increment=0.1, value=0.55, agwStyle=FS.FS_LEFT)
         self.configBoxEtaCtrl.SetFormat("%f")
         self.configBoxEtaCtrl.SetDigits(5)
 
@@ -524,8 +128,12 @@ class Design(wx.Frame):
                 (self.configBoxCellTypeFCCRadio, 0, wx.EXPAND),
                 (self.configBoxNetConstantLabel, 0, wx.EXPAND),
                 (self.configBoxNetConstantCtrl, 0, wx.EXPAND),
+                (self.configBoxHeightLabel, 0, wx.EXPAND),
+                (self.configBoxHeightCtrl, 0, wx.EXPAND),
                 (self.configBoxWidthLabel, 0, wx.EXPAND),
-                (self.configBoxWidthCtrl, 0, wx.EXPAND),
+                (self.configBoxWidthValue, 0, wx.EXPAND),
+                (self.configBoxLengthLabel, 0, wx.EXPAND),
+                (self.configBoxLengthValue, 0, wx.EXPAND),
                 (self.configBoxEtaLabel, 0, wx.EXPAND),
                 (self.configBoxEtaCtrl, 0, wx.EXPAND),
                 (self.configBoxXLabel, 0, wx.EXPAND),
@@ -534,23 +142,125 @@ class Design(wx.Frame):
             ])
         self.configBoxSizer.Add(self.configBoxGrid)
 
-        exportButton = wx.Button(self, label="Export")
-        exportButton.Bind(wx.EVT_BUTTON, self.checkParameters)
+        # Figures
+        self.figuresBox = wx.StaticBox(self, label='Figures', size=(190,200))
+        self.figuresBoxSizer = wx.StaticBoxSizer(self.figuresBox, wx.VERTICAL)
 
-        
+        self.figuresBoxGrid = wx.GridSizer(2, 1, 10, 10)
+
+        # Quadrilateral
+        self.figuresQuadPane = wx.CollapsiblePane(self, label="Quadrilateral", style=wx.CP_DEFAULT_STYLE|wx.CP_NO_TLW_RESIZE)
+        self.figuresQuadPane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.quadToggled)
+
+        self.figuresQuadSizer = wx.GridSizer(1, 4, 10, 10)
+        self.figuresQuadPaneWin = self.figuresQuadPane.GetPane()
+
+        self.figuresQuadWidthLabel = wx.StaticText(self.figuresQuadPaneWin, label="Width")
+        self.figuresQuadWidthCtrl = wx.SpinCtrl(self.figuresQuadPaneWin, value="1", initial=1, min=1, size=(50,20))
+        self.figuresQuadHeightLabel = wx.StaticText(self.figuresQuadPaneWin, label="Height")
+        self.figuresQuadHeightCtrl = wx.SpinCtrl(self.figuresQuadPaneWin, value="1", initial=1, min=1, size=(50,20))
+
+        self.figuresQuadSizer.AddMany([
+                (self.figuresQuadWidthLabel, 0, wx.EXPAND),
+                (self.figuresQuadWidthCtrl, 0, wx.EXPAND),
+                (self.figuresQuadHeightLabel, 0, wx.EXPAND),
+                (self.figuresQuadHeightCtrl, 0, wx.EXPAND)
+            ])
+
+        self.figuresQuadPaneWin.SetSizer(self.figuresQuadSizer)
+
+        # Circle
+        self.figuresCirclePane = wx.CollapsiblePane(self, label="Circle", style=wx.CP_DEFAULT_STYLE|wx.CP_NO_TLW_RESIZE)
+        self.figuresCirclePane.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.circleToggled)
+
+        self.figuresCircleSizer = wx.GridSizer(2, 2, 10, 10)
+        self.figuresCirclePaneWin = self.figuresCirclePane.GetPane()
+
+        self.figuresCircleRadiusLabel = wx.StaticText(self.figuresCirclePaneWin, label="Radius")
+        self.figuresCircleRadiusCtrl = wx.SpinCtrl(self.figuresCirclePaneWin, value="1", initial=1, min=1, size=(50,20))
+
+        self.figuresCircleRadiusCtrl.Bind(wx.EVT_SPINCTRL, self.updateCircleWidth)
+
+        self.figuresCircleWidthLabel = wx.StaticText(self.figuresCirclePaneWin, label="Width (nm)")
+        self.figuresCircleWidthValue = wx.StaticText(self.figuresCirclePaneWin, label="--")
+
+        self.figuresCircleSizer.AddMany([
+                (self.figuresCircleRadiusLabel, 0, wx.EXPAND),
+                (self.figuresCircleRadiusCtrl, 0, wx.EXPAND),
+                (self.figuresCircleWidthLabel, 0, wx.EXPAND),
+                (self.figuresCircleWidthValue, 0, wx.EXPAND)
+            ])
+
+        self.figuresCirclePaneWin.SetSizer(self.figuresCircleSizer)
+
+        self.figuresBoxGrid.AddMany([
+            (self.figuresQuadPane, 0, wx.EXPAND),
+            (self.figuresCirclePane, 0, wx.EXPAND)
+            ])
+
+
+        self.figuresBoxSizer.Add(self.figuresBoxGrid)
+
+        exportButton = wx.Button(self, label="Export")
+        exportButton.Bind(wx.EVT_BUTTON, self.checkParametersTrigger)
+
+        previewButton = wx.Button(self, label="Show/hide preview")
+        previewButton.Bind(wx.EVT_BUTTON, self.togglePreview)
+
         sidebar.Add(self.sizeBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         sidebar.Add(self.configBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
+        sidebar.Add(self.figuresBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         sidebar.Add(exportButton, 0, wx.EXPAND | wx.ALL, 5)
+        sidebar.Add(previewButton, 0, wx.EXPAND | wx.ALL, 5)
 
-        content.Add(self.grid, 0, wx.EXPAND)
+        content.Add(self.grid, 1, wx.EXPAND)
+        content.Add(self.canvas, 1, wx.EXPAND)
+
+        self.grid.Show()
+        self.canvas.Hide()
+        self.Layout()
+        self.togglePreviewStatus = 0
 
         layout.Add(sidebar, 0, wx.EXPAND)
-        layout.Add(content, 0, wx.EXPAND)
+        layout.Add(content, 1, wx.EXPAND)
 
         self.SetSizer(layout)
         self.Layout()
 
+        self.grid.updateSize()
+
         self.updateParameters()
+
+    def quadToggled(self, evt):
+        self.Layout()
+        if not evt.GetCollapsed():
+            self.grid.figure = 'quad'
+            self.setFigure(self.figuresQuadPane)
+        else:
+            self.grid.figure = False
+
+
+    def circleToggled(self, evt):
+        self.Layout()
+        if not evt.GetCollapsed():
+            self.grid.figure = 'circle'
+            self.setFigure(self.figuresCirclePane)
+        else:
+            self.grid.figure = False
+
+    def setFigure(self, openedPane):
+        panes = [self.figuresQuadPane, self.figuresCirclePane]
+        
+        for pane in panes:
+            if not pane == openedPane:
+                pane.Collapse()
+
+    def updateCircleWidth(self, evt):
+        radius = self.figuresCircleRadiusCtrl.GetValue()
+        
+        width = radius * self.a / (self.x ** self.eta)
+
+        self.figuresCircleWidthValue.SetLabel(str(width))
 
     def updateGridSize(self, evt):
         self.grid.cols = self.sizeBoxWidthCtrl.GetValue()
@@ -574,27 +284,34 @@ class Design(wx.Frame):
 
     def updateParameters(self):
 
-        widthPixels = self.grid.getWidth()
-        
         layers = self.configBoxLayersCtrl.GetValue()
-        widthReal = self.configBoxWidthCtrl.GetValue()
+        heightReal = self.configBoxHeightCtrl.GetValue()
 
-        a = self.configBoxNetConstantCtrl.GetValue()
-        eta = self.configBoxEtaCtrl.GetValue()
+        widthPixels = self.grid.getWidth()
+        lengthPixels = self.grid.getLength()
 
-        if widthPixels > 0:
-            factor = layers * a
-            if self.type == "BCC" or self.type == "FCC":
-                factor = factor/2
+        widthReal = heightReal * widthPixels / layers
+        lengthReal = heightReal * lengthPixels / layers
 
-            x = factor / heightReal ** (1/eta)
+        self.configBoxWidthValue.SetLabel(str(widthReal))
+        self.configBoxLengthValue.SetLabel(str(lengthReal))
 
-            self.configBoxXValue.SetLabel(str(x))
-        else:
-            self.configBoxXValue.SetLabel("--")
+        self.a = a = self.configBoxNetConstantCtrl.GetValue()
+        self.eta = eta = self.configBoxEtaCtrl.GetValue()
+
+        factor = 1
+        if self.type == "BCC" or self.type == "FCC":
+            factor = 1/2
+
+        self.x = (layers * a * factor / heightReal) ** (1/eta)
+
+        self.configBoxXValue.SetLabel('{0:.10f}'.format(self.x))
 
 
-    def checkParameters(self, evt):
+    def checkParametersTrigger(self, evt):
+        self.checkParameters()
+
+    def checkParameters(self):
         valid = True
 
         if not is_number(self.configBoxLayersCtrl.GetValue()):
@@ -603,9 +320,7 @@ class Design(wx.Frame):
             valid = False
         if not is_number(self.configBoxNetConstantCtrl.GetValue()):
             valid = False
-        if not is_number(self.configBoxWidthCtrl.GetValue()):
-            valid = False
-        if not self.grid.valid():
+        if not is_number(self.configBoxHeightCtrl.GetValue()):
             valid = False
 
         if not valid:
@@ -615,18 +330,53 @@ class Design(wx.Frame):
             self.configs['cells'] = self.grid.cells
 
             if self.type == 'SC':
-                cube = SC(self.configs)
+                self.cube = SC(self.configs)
             if self.type == 'BCC':
-                cube = BCC(self.configs)
+                self.cube = BCC(self.configs)
             if self.type == 'FCC':
-                cube = FCC(self.configs)
+                self.cube = FCC(self.configs)
 
-            cube.calculate()
+            self.cube.calculate()
 
-            pprint(cube.atoms)
-            pprint(cube.neighborhood)
+            self.exportFile()
 
-            #wx.MessageBox('Valid! Calculating atoms.', 'Info', wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox('Data exported to export.dat file.', 'Info', wx.OK | wx.ICON_INFORMATION)
+
+    def exportFile(self):
+        f = open("export.dat", "w")
+
+        number_of_neighbors = 6
+        if self.type == 'BCC':
+            number_of_neighbors = 8
+        if self.type == 'FCC':
+            number_of_neighbors = 12
+
+        line = [len(self.cube.atoms), 1, number_of_neighbors, '{0:.10f}'.format(self.x)]
+        
+        f.write("\t".join(str(x) for x in line) + "\n")
+
+        for atom_id, atom in self.cube.atoms.iteritems():
+            neighbors = self.cube.neighborhood[atom_id]
+            
+            line = [atom_id] + ['{0:.10f}'.format(x * self.x) for x in atom] + [len(neighbors)] + neighbors + ([0] * (number_of_neighbors - len(neighbors)))
+            #line = [atom_id] + ['{0:.10f}'.format(x) for x in atom] + [len(neighbors)] + neighbors + ([0] * (number_of_neighbors - len(neighbors)))
+            
+            f.write("\t".join(str(x) for x in line) + "\n")
+
+        f.close()
+
+    def togglePreview(self, evt):
+        self.checkParameters()
+        self.canvas.setAtoms(self.cube.atoms)
+        if self.togglePreviewStatus:
+            self.canvas.Hide()
+            self.grid.Show()
+            self.togglePreviewStatus = 0
+        else:
+            self.canvas.Show()
+            self.grid.Hide()
+            self.togglePreviewStatus = 1
+        self.Layout()
 
 
     
