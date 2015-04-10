@@ -3,7 +3,7 @@ import math
 
 class BitMapGrid(wx.grid.Grid):
   def __init__(self, parent):
-    
+
     self.parent = parent
 
     self.rows = 10
@@ -14,8 +14,10 @@ class BitMapGrid(wx.grid.Grid):
     self.width = self.height = 0
 
     wx.grid.Grid.__init__(self, parent, -1)
-    
+
     self.cells = [[0 for x in xrange(self.cols)] for x in xrange(self.rows)]
+
+    self.lastSelected = self.lastClicked = [0,0]
 
     self.calcCellSize()
 
@@ -33,14 +35,22 @@ class BitMapGrid(wx.grid.Grid):
     self.Bind(wx.grid.EVT_GRID_RANGE_SELECT, self.onSelectRange)
     self.Bind(wx.EVT_CHAR_HOOK, self.disableKeyboard)
 
+    self.Bind(wx.EVT_SIZE, self.updateSizeEvt)
+
+  def updateSizeEvt(self, evt):
+    self.updateSize()
+
   def calcCellSize(self):
     (self.width, self.height) = self.parent.content.GetSize()
 
-    self.rowSize = math.ceil(self.height/self.rows)
-    self.colSize = math.ceil(self.width/self.cols)
+    self.rowSize = math.ceil(self.height/(self.rows + 1))
+    self.colSize = math.ceil(self.width/(self.cols + 1))
 
-    self.cellSize = min(self.rowSize, self.colSize)
-    
+    self.cellSize = max(min(self.rowSize, self.colSize), 20)
+
+    self.SetRowLabelSize(self.cellSize)
+    self.SetColLabelSize(self.cellSize)
+
     self.SetDefaultColSize(self.cellSize)
     self.SetDefaultRowSize(self.cellSize)
 
@@ -61,10 +71,14 @@ class BitMapGrid(wx.grid.Grid):
     if rowsDiff < 0:
       self.DeleteRows(0, (-1 * rowsDiff))
 
+    for j in xrange(self.cols):
+      # j starts from 0, the label should start from 1
+      self.SetColLabelValue(j, str(j + 1))
+
     for i in xrange(self.rows):
       for j in xrange(self.cols):
         value = 0
-        
+
         try:
           value = self.cells[i][j]
         except IndexError:
@@ -92,7 +106,7 @@ class BitMapGrid(wx.grid.Grid):
   def onClickCell(self, evt):
     x = evt.GetRow()
     y = evt.GetCol()
-    
+
     self.lastClicked = [x, y]
 
     if self.figure:
@@ -143,7 +157,6 @@ class BitMapGrid(wx.grid.Grid):
             self.toggleCell(i, j)
 
       evt.Skip()
-    
 
   def toggleCell(self, x, y):
     if self.cells[x][y] == 0:
@@ -156,6 +169,13 @@ class BitMapGrid(wx.grid.Grid):
     self.ClearSelection()
     self.ForceRefresh()
     self.parent.updateParameters()
+
+  def clearGrid(self):
+    self.cells = [[0 for x in xrange(self.cols)] for x in xrange(self.rows)]
+    for i in xrange(self.rows):
+      for j in xrange(self.cols):
+        self.SetCellBackgroundColour(i, j, "WHITE")
+    self.ForceRefresh()
 
   def getWidth(self):
     left = right = None
@@ -184,10 +204,9 @@ class BitMapGrid(wx.grid.Grid):
     if top != None and bottom != None:
       return bottom - top + 1
     return 0
-  
+
   def disableKeyboard(self, evt):
     pass
-
 
 # From: http://stackoverflow.com/questions/481144/equation-for-testing-if-a-point-is-inside-a-circle
 def in_circle(center_x, center_y, radius, x, y):
