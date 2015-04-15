@@ -11,6 +11,7 @@ import re
 from bitMapGrid import BitMapGrid
 from cubes import SC, FCC, BCC
 from atomsCanvas import AtomsCanvas
+from axes import Axes
 
 from pprint import pprint
 
@@ -226,14 +227,22 @@ class Design(wx.Frame):
         self.previewButton = wx.Button(designSidebarPanel, label="Show/hide preview")
         self.previewButton.Bind(wx.EVT_BUTTON, self.togglePreview)
 
+        axesBoxD = wx.StaticBox(designSidebarPanel, label='Axes')
+        self.axesBoxSizerD = wx.StaticBoxSizer(axesBoxD, wx.VERTICAL)
+        self.axesD = Axes(designSidebarPanel)
+        self.axesBoxSizerD.Add(self.axesD)
+
         designSidebar.Add(self.sizeBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         designSidebar.Add(self.configBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         designSidebar.Add(self.figuresBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         designSidebar.Add(self.clearButton, 0, wx.EXPAND | wx.ALL, 5)
         designSidebar.Add(self.exportButton, 0, wx.EXPAND | wx.ALL, 5)
         designSidebar.Add(self.previewButton, 0, wx.EXPAND | wx.ALL, 5)
+        designSidebar.Add(self.axesBoxSizerD, 0, wx.EXPAND | wx.ALL, 5)
 
         designSidebarPanel.SetSizer(designSidebar)
+
+        self.axesBoxSizerD.ShowItems(False)
 
         visualizationSidebarPanel = wx.Panel(tabs)
         visualizationSidebar = wx.BoxSizer(wx.VERTICAL)
@@ -258,8 +267,8 @@ class Design(wx.Frame):
         ])
         inputDirSizer.Add(inputDirGrid)
 
-        statsBox = wx.StaticBox(visualizationSidebarPanel, label='Input Stats', size=(190, 200))
-        statsSizer = wx.StaticBoxSizer(statsBox, wx.VERTICAL)
+        self.statsBox = wx.StaticBox(visualizationSidebarPanel, label='Input Stats', size=(190, 200))
+        self.statsSizer = wx.StaticBoxSizer(self.statsBox, wx.VERTICAL)
 
         statsGrid = wx.GridSizer(4, 2, 10, 10)
 
@@ -286,7 +295,7 @@ class Design(wx.Frame):
             (self.statsNumberDataFilesValue, 0, wx.EXPAND)
         ])
 
-        statsSizer.Add(statsGrid)
+        self.statsSizer.Add(statsGrid)
 
         self.readInputBtn = wx.Button(visualizationSidebarPanel, label="Read Input files")
 
@@ -296,20 +305,20 @@ class Design(wx.Frame):
         self.readInputBtn.Bind(wx.EVT_BUTTON, self.readInputFiles)
 
         viewModeBox = wx.StaticBox(visualizationSidebarPanel, label='View mode', size=(190, 200))
-        viewModeSizer = wx.StaticBoxSizer(viewModeBox, wx.VERTICAL)
+        self.viewModeSizer = wx.StaticBoxSizer(viewModeBox, wx.VERTICAL)
 
-        viewModeGrid = wx.FlexGridSizer(4, 2, 10, 10)
+        viewModeGrid = wx.FlexGridSizer(5, 2, 10, 10)
 
-        self.viewModeAllLayers = wx.RadioButton(visualizationSidebarPanel, label='All layers', style=wx.RB_GROUP)
+        self.viewModeAllLayers = wx.RadioButton(viewModeBox, label='All layers', style=wx.RB_GROUP)
 
-        self.viewModeLayerX = wx.RadioButton(visualizationSidebarPanel, label='Layer in X')
-        self.viewLayerX = wx.ComboBox(visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.viewModeLayerX = wx.RadioButton(viewModeBox, label='Layer in X')
+        self.viewLayerX = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
-        self.viewModeLayerY = wx.RadioButton(visualizationSidebarPanel, label='Layer in Y')
-        self.viewLayerY = wx.ComboBox(visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.viewModeLayerY = wx.RadioButton(viewModeBox, label='Layer in Y')
+        self.viewLayerY = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
-        self.viewModeLayerZ = wx.RadioButton(visualizationSidebarPanel, label='Layer in Z')
-        self.viewLayerZ = wx.ComboBox(visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
+        self.viewModeLayerZ = wx.RadioButton(viewModeBox, label='Layer in Z')
+        self.viewLayerZ = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY)
 
         self.viewModeAllLayers.SetValue(True)
         self.viewModeAllLayers.Enable(False)
@@ -331,7 +340,7 @@ class Design(wx.Frame):
 
         viewModeGrid.AddMany([
             (self.viewModeAllLayers, 0, wx.EXPAND),
-            (wx.StaticText(self, -1, ''), 0, wx.EXPAND), #Blank space
+            (wx.StaticText(viewModeBox, -1, ''), 0, wx.EXPAND), #Blank space
             (self.viewModeLayerX, 0, wx.EXPAND),
             (self.viewLayerX, 0, wx.EXPAND),
             (self.viewModeLayerY, 0, wx.EXPAND),
@@ -340,35 +349,65 @@ class Design(wx.Frame):
             (self.viewLayerZ, 0, wx.EXPAND)
         ])
 
-        viewModeSizer.Add(viewModeGrid)
+        self.viewModeSizer.Add(viewModeGrid, flag=wx.ALL, border=1)
 
         controlsBox = wx.StaticBox(visualizationSidebarPanel, label='Controls', size=(190, 200))
-        controlsSizer = wx.StaticBoxSizer(controlsBox, wx.VERTICAL)
+        self.controlsSizer = wx.StaticBoxSizer(controlsBox, wx.VERTICAL)
 
-        controlsGrid = wx.GridSizer(1, 2, 10, 10)
+        controlsGrid = wx.FlexGridSizer(1, 4, 10, 10)
 
-        self.playStopBtn = wx.Button(visualizationSidebarPanel, -1, "Play")
+        self.playBitmap = wx.Bitmap("images/play.png", wx.BITMAP_TYPE_ANY)
+        self.stopBitmap = wx.Bitmap("images/stop.png", wx.BITMAP_TYPE_ANY)
+        self.backBitmap = wx.Bitmap("images/back.png", wx.BITMAP_TYPE_ANY)
+        self.forwardBitmap = wx.Bitmap("images/forward.png", wx.BITMAP_TYPE_ANY)
+
+        self.backBtn = wx.BitmapButton(controlsBox, -1, self.backBitmap, (0,0), (45,45))
+        self.playStopBtn = wx.BitmapButton(controlsBox, -1, self.playBitmap, (0,0), (45,45))
+        self.forwardBtn = wx.BitmapButton(controlsBox, -1, self.forwardBitmap, (0,0), (45,45))
+
+        self.backBtn.Bind(wx.EVT_BUTTON, self.backCurrentT)
         self.playStopBtn.Bind(wx.EVT_BUTTON, self.playStop)
-        self.playStopBtn.Enable(False)
+        self.forwardBtn.Bind(wx.EVT_BUTTON, self.forwardCurrentT)
 
-        self.currentTLabel = wx.StaticText(visualizationSidebarPanel, label="")
+        self.backBtn.Enable(False)
+        self.playStopBtn.Enable(False)
+        self.forwardBtn.Enable(False)
+
+        self.currentTCtrl = wx.TextCtrl(controlsBox, value="0", style=wx.TE_CENTRE, size=(70, 10))
+        font = wx.Font(18, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        self.currentTCtrl.SetFont(font)
+        self.currentTCtrl.Enable(False)
+        self.currentTCtrl.Bind(wx.EVT_TEXT, self.startCurrentTTimer)
+        self.currentTTimer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.setCurrentT, self.currentTTimer)
 
         controlsGrid.AddMany([
+            (self.backBtn, 0, wx.EXPAND),
             (self.playStopBtn, 0, wx.EXPAND),
-            (self.currentTLabel, 0, wx.EXPAND)
+            (self.forwardBtn, 0, wx.EXPAND),
+            (self.currentTCtrl, 0, wx.EXPAND)
         ])
 
-        controlsSizer.Add(controlsGrid)
+        self.controlsSizer.Add(controlsGrid)
+
+        axesBoxV = wx.StaticBox(visualizationSidebarPanel, label='Axes')
+        axesBoxSizerV = wx.StaticBoxSizer(axesBoxV, wx.VERTICAL)
+        self.axesV = Axes(visualizationSidebarPanel)
+        axesBoxSizerV.Add(self.axesV)
 
         visualizationSidebar.AddMany([
             (inputDirSizer, 0, wx.EXPAND | wx.ALL, 5),
-            (statsSizer, 0, wx.EXPAND | wx.ALL, 5),
+            (self.statsSizer, 0, wx.EXPAND | wx.ALL, 5),
             (self.readInputBtn, 0, wx.EXPAND | wx.ALL, 5),
-            (controlsSizer, 0, wx.EXPAND | wx.ALL, 5),
-            (viewModeSizer, 0, wx.EXPAND | wx.ALL, 5)
+            (self.controlsSizer, 0, wx.EXPAND | wx.ALL, 5),
+            (self.viewModeSizer, 0, wx.EXPAND | wx.ALL, 5),
+            (axesBoxSizerV, 0, wx.EXPAND | wx.ALL, 5)
         ])
 
         visualizationSidebarPanel.SetSizer(visualizationSidebar)
+
+        self.viewModeSizer.ShowItems(False)
+        self.controlsSizer.ShowItems(False)
 
         tabs.AddPage(designSidebarPanel, "Design")
         tabs.AddPage(visualizationSidebarPanel, "Visualization")
@@ -403,15 +442,23 @@ class Design(wx.Frame):
         self.statsNumberDataFilesValue.SetLabel("--")
 
         self.readInputBtn.Enable(False)
+        self.backBtn.Enable(False)
         self.playStopBtn.Enable(False)
+        self.forwardBtn.Enable(False)
 
         self.viewModeAllLayers.Enable(False)
         self.viewModeLayerX.Enable(False)
         self.viewModeLayerY.Enable(False)
         self.viewModeLayerZ.Enable(False)
 
+        self.readInputBtn.Show(True)
+        self.statsSizer.ShowItems(True)
+        self.viewModeSizer.ShowItems(False)
+        self.controlsSizer.ShowItems(False)
+        self.Layout()
+
         self.canvas.playStatus = 'stop'
-        self.playStopBtn.SetLabel('Play')
+        self.playStopBtn.SetBitmapLabel(self.playBitmap)
 
         self.canvas.setDataset({}, {})
 
@@ -517,11 +564,21 @@ class Design(wx.Frame):
 
                 f.close()
 
+        self.backBtn.Enable(True)
         self.playStopBtn.Enable(True)
+        self.forwardBtn.Enable(True)
         self.viewModeAllLayers.Enable(True)
         self.viewModeLayerX.Enable(True)
         self.viewModeLayerY.Enable(True)
         self.viewModeLayerZ.Enable(True)
+        self.currentTCtrl.Enable(True)
+
+        self.readInputBtn.Show(False)
+        self.statsSizer.ShowItems(False)
+        self.viewModeSizer.ShowItems(True)
+        self.controlsSizer.ShowItems(True)
+        self.Layout()
+
         self.canvas.setDataset(atoms, dataset)
 
         layersX = self.canvas.layersX.keys()
@@ -548,18 +605,89 @@ class Design(wx.Frame):
         self.viewLayerZ.AppendItems(layersZ)
         self.viewLayerZ.SetSelection(0)
 
+    def startCurrentTTimer(self, evt):
+        self.currentTTimer.Start(500, wx.TIMER_ONE_SHOT)
+
+    def validateNewT(self, t):
+        t = int(t)
+        if t not in self.canvas.dataset.keys():
+            t = self.canvas.currentT
+
+            Ts = self.canvas.dataset.keys()
+            Ts.sort()
+            min_t = Ts[0]
+
+            Ts.sort(reverse=True)
+            max_t = Ts[0]
+
+            if t > max_t:
+                t = max_t
+
+            if t < min_t:
+                t = min_t
+
+        self.setT(t)
+        self.canvas.currentT = t
+        self.canvas.OnDraw()
+
+    def setCurrentT(self, evt):
+        t = int(self.currentTCtrl.GetValue())
+        self.validateNewT(t)
+
+    def backCurrentT(self, evt):
+        t = self.canvas.currentT - 50
+
+        Ts = self.canvas.dataset.keys()
+        Ts.sort()
+        min_t = Ts[0]
+
+        if t < min_t:
+            t = min_t
+
+        self.validateNewT(t)
+
+    def forwardCurrentT(self, evt):
+        t = self.canvas.currentT + 50
+
+        Ts = self.canvas.dataset.keys()
+        Ts.sort(reverse=True)
+        max_t = Ts[0]
+
+        if t > max_t:
+            t = max_t
+
+        self.validateNewT(t)
 
     def setT(self, t):
-        self.currentTLabel.SetLabel("t: " + str(t))
+        self.currentTCtrl.ChangeValue(str(t))
+
+        Ts = self.canvas.dataset.keys()
+        Ts.sort()
+        min_t = Ts[0]
+
+        Ts.sort(reverse=True)
+        max_t = Ts[0]
+
+        if t == max_t:
+            self.forwardBtn.Enable(False)
+        else:
+            self.forwardBtn.Enable(True)
+
+        if t == min_t:
+            self.backBtn.Enable(False)
+        else:
+            self.backBtn.Enable(True)
 
     def playStop(self, evt):
         if self.canvas.playStatus == 'stop':
             self.canvas.playStatus = 'play'
-            self.playStopBtn.SetLabel('Stop')
+            self.playStopBtn.SetBitmapLabel(self.stopBitmap)
+            self.currentTCtrl.Enable(False)
             self.canvas.play(True)
         else:
             self.canvas.playStatus = 'stop'
-            self.playStopBtn.SetLabel('Play')
+            self.currentTCtrl.Enable(True)
+            self.playStopBtn.SetBitmapLabel(self.playBitmap)
 
     def openDirDialog(self, evt):
         dlg = wx.DirDialog(self, "Choose a directory:",
@@ -583,12 +711,20 @@ class Design(wx.Frame):
             self.canvas.Hide()
             self.grid.Show()
             self.togglePreviewStatus = 0
+            self.axesBoxSizerD.ShowItems(False)
             self.allowParameterInput(True)
         else:
             self.canvas.setAtoms({}, {})
             self.canvas.restartPosition()
+            wx.CallAfter(self.canvas.OnDraw)
             self.canvas.Show()
             self.grid.Hide()
+            self.readInputBtn.Show(True)
+            self.statsSizer.ShowItems(True)
+            self.viewModeSizer.ShowItems(False)
+            self.controlsSizer.ShowItems(False)
+            self.axesBoxSizerD.ShowItems(True)
+            self.validateInputDirectory({})
             self.togglePreviewStatus = 1
             self.allowParameterInput(False)
         self.Layout()
@@ -786,11 +922,13 @@ class Design(wx.Frame):
             self.canvas.Hide()
             self.grid.Show()
             self.togglePreviewStatus = 0
+            self.axesBoxSizerD.ShowItems(False)
             self.allowParameterInput(True)
         else:
             self.canvas.Show()
             self.grid.Hide()
             self.togglePreviewStatus = 1
+            self.axesBoxSizerD.ShowItems(True)
             self.allowParameterInput(False)
         self.Layout()
 

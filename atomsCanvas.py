@@ -205,11 +205,11 @@ class AtomsCanvas(glcanvas.GLCanvas):
     for atom_id, atom in atoms.iteritems():
       x, y, z = atom
 
-      if not x in self.layersX:
+      if x not in self.layersX:
         self.layersX[x] = []
-      if not y in self.layersY:
+      if y not in self.layersY:
         self.layersY[y] = []
-      if not z in self.layersZ:
+      if z not in self.layersZ:
         self.layersZ[z] = []
 
       self.layersX[x].append(atom_id)
@@ -418,4 +418,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
 
     # push into visible buffer
     self.SwapBuffers()
+
+    wx.CallAfter(self.parent.axesD.update)
+    wx.CallAfter(self.parent.axesV.update)
     self.Refresh(False)
