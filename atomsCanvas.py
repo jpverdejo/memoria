@@ -263,6 +263,9 @@ class AtomsCanvas(glcanvas.GLCanvas):
       self.rotationVectorX -= self.lastmousex - self.mousex
       self.rotationVectorY -= self.lastmousey - self.mousey
 
+      wx.CallAfter(self.parent.axesD.update)
+      wx.CallAfter(self.parent.axesV.update)
+
       self.Refresh(False)
 
   def InitGL(self):
@@ -419,6 +422,4 @@ class AtomsCanvas(glcanvas.GLCanvas):
     # push into visible buffer
     self.SwapBuffers()
 
-    wx.CallAfter(self.parent.axesD.update)
-    wx.CallAfter(self.parent.axesV.update)
     self.Refresh(False)

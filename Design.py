@@ -34,6 +34,16 @@ class Design(wx.Frame):
         self.atoms_file_format = "bloque9x13_fccc.dat"
         self.data_files_format = "mcbloquen1P100_*_1.dat"
 
+        # self.atoms_file_format = "D0.1.dat"
+        # self.data_files_format = "mcD0.1.dn1P2500_*_1.dat"
+
+        # self.atoms_file_format = "D0.5.dat"
+        # self.data_files_format = "mcD0.5.dn1P2500_*_1.dat"
+
+        # self.atoms_file_format = "D0.1.dat"
+        # self.data_files_format = "mcD0.1.dn1P2500_*_1.dat"
+
+
         self.drawSidebar()
 
     def drawSidebar(self):
@@ -75,7 +85,7 @@ class Design(wx.Frame):
         self.configBox = wx.StaticBox(designSidebarPanel, label='Object parameters', size=(190,200))
         self.configBoxSizer = wx.StaticBoxSizer(self.configBox, wx.VERTICAL)
 
-        self.configBoxGrid = wx.GridSizer(10, 2, 10, 10)
+        self.configBoxGrid = wx.GridSizer(10, 2, 5, 5)
 
         # Number of layers
         self.configBoxLayersLabel = wx.StaticText(designSidebarPanel, label="Layers", size=(70,20))
@@ -712,6 +722,8 @@ class Design(wx.Frame):
             self.grid.Show()
             self.togglePreviewStatus = 0
             self.axesBoxSizerD.ShowItems(False)
+            self.sizeBoxSizer.ShowItems(True)
+            self.figuresBoxSizer.ShowItems(True)
             self.allowParameterInput(True)
         else:
             self.canvas.setAtoms({}, {})
@@ -923,12 +935,16 @@ class Design(wx.Frame):
             self.grid.Show()
             self.togglePreviewStatus = 0
             self.axesBoxSizerD.ShowItems(False)
+            self.sizeBoxSizer.ShowItems(True)
+            self.figuresBoxSizer.ShowItems(True)
             self.allowParameterInput(True)
         else:
             self.canvas.Show()
             self.grid.Hide()
             self.togglePreviewStatus = 1
             self.axesBoxSizerD.ShowItems(True)
+            self.sizeBoxSizer.ShowItems(False)
+            self.figuresBoxSizer.ShowItems(False)
             self.allowParameterInput(False)
         self.Layout()
 
