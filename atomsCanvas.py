@@ -114,6 +114,11 @@ class AtomsCanvas(glcanvas.GLCanvas):
           self.OnDraw()
           break
 
+      Ts.sort(reverse=True)
+      max_t = Ts[0]
+      if t == max_t:
+        self.parent.playStop({})
+
   def centerObject(self, atoms):
     firstx = lastx = firsty = lasty = firstz = lastz = False
     for atom_id, atom in atoms.iteritems():
@@ -148,8 +153,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
       y -= objectcentery
       z -= objectcenterz
 
-      # Invert x and y positions to make it look logical
-      tmp_atoms[atom_id] = (y, x, z)
+      tmp_atoms[atom_id] = (x, y, z)
 
     return tmp_atoms
 
@@ -161,8 +165,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
     for atom_id, atom in self.atoms.iteritems():
       atom_key = "_".join(str(x) for x in atom)
       self.atoms_type[atom_id] = types[atom_key]
-
-    self.atoms = self.centerObject(self.atoms)
 
   def setDataset(self, atoms, dataset):
     self.mode = 'visualization'
@@ -180,17 +182,28 @@ class AtomsCanvas(glcanvas.GLCanvas):
         atom_ids.sort()
         x,y,z = dataset[self.currentT]['atoms'][atom_ids[0]]
 
-        if x > 0:
+        if x > 0 and x > y and x > z:
           self.colorDirection = 'x'
           self.maxColor = abs(x)
-        if y > 0:
+        if y > 0 and y > x and y > z:
           self.colorDirection = 'y'
           self.maxColor = abs(y)
-        if z > 0:
+        if z > 0 and z > x and z > y:
           self.colorDirection = 'z'
           self.maxColor = abs(z)
     else:
       self.currentT = 0
+
+    self.plotData = []
+    for t, data in dataset.iteritems():
+      if self.colorDirection == 'x':
+        M = data['Mx']
+      if self.colorDirection == 'y':
+        M = data['My']
+      if self.colorDirection == 'z':
+        M = data['Mz']
+
+      self.plotData.append((M, data['intensity']))
 
     self.atoms = {}
 
@@ -222,8 +235,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
         z = z/factor
 
       self.atoms[atom_id] = (x, y, z)
-
-    self.atoms = self.centerObject(self.atoms)
 
     self.OnDraw()
 
@@ -300,7 +311,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
     return color
 
   def drawVector(self, vector):
-    length = 0.3
+    length = 0.5
     color = self.getVectorColor(vector)
 
     # perpendicular_vector = self.perpendicular_vector(vector)
@@ -318,9 +329,9 @@ class AtomsCanvas(glcanvas.GLCanvas):
     glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
     glRotate(-angle, vx, vy, vz)
     q = gluNewQuadric()
-    gluCylinder( q , 0.05 , 0.05 , length , 30 , 30 )
+    gluCylinder( q , 0.15 , 0.05 , length , 30 , 30 )
     glTranslate(0,0,length)
-    glutSolidCone(0.1, 0.2, 30, 30)
+    glutSolidCone(0.2, 0.3, 30, 30)
     glTranslate(0,0,-length)
     glRotate(angle, vx, vy, vz)
     glMaterialfv(GL_FRONT,GL_DIFFUSE,[1, 1, 1, 1])
@@ -351,6 +362,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
     return angle
 
   def OnDraw(self):
+    self.SetCurrent(self.context)
     # clear color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 

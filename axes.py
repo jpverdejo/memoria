@@ -68,6 +68,7 @@ class Axes(glcanvas.GLCanvas):
     wx.CallAfter(self.OnDraw)
 
   def OnDraw(self):
+    self.SetCurrent(self.context)
     if glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
       # clear color and depth buffers
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

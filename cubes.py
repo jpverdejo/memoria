@@ -18,14 +18,13 @@ class SC:
   def calculate(self):
     i = j = -1
     # deltas = [[0, 0], [0, 1], [1, 0], [1, 1]]
-
     for row in self.configs['cells']:
       j = -1
       i += 1
 
       for cell in row:
         j += 1 #Cell i,j
-        point = [i, j]
+        point = [j, i]
 
         if cell == 1:
           self.top_layer.append(tuple(point))
@@ -38,7 +37,7 @@ class SC:
     self.top_layer = sorted(set(self.top_layer))
 
     # Add Z position to atoms
-    atom_id = -1
+    atom_id = 0
 
     for z in xrange(self.configs['layers']):
       for atom in self.top_layer:
@@ -47,7 +46,7 @@ class SC:
         atom_id += 1 #increment atom_id
         atom_key = "_".join(str(x) for x in atom)
 
-        self.atoms[str(atom_id)] = atom
+        self.atoms[atom_id] = atom
         self.atom_per_position[atom_key] = atom_id
         self.atom_type[atom_key] = 'vertex'
 
@@ -93,14 +92,14 @@ class BCC:
 
       for cell in row:
         j += 1 #Cell i,j
-        point = [i, j]
+        point = [j, i]
 
         if cell == 1:
           self.top_layer.append(tuple(point))
 
           try:
             if cells[i+1][j] == 1 and cells[i][j+1] == 1 and cells[i+1][j+1] == 1:
-              self.intermediate_layer.append((i+0.5, j+0.5))
+              self.intermediate_layer.append((j+0.5, i+0.5))
           except:
             pass
           # for delta in deltas:
@@ -112,7 +111,7 @@ class BCC:
     self.top_layer = sorted(set(self.top_layer))
 
     # Add Z position to atoms
-    atom_id = -1
+    atom_id = 0
 
     for z in xrange(int(math.ceil(float(self.configs['layers']) / 2))):
       for atom in self.top_layer:
@@ -182,7 +181,7 @@ class FCC:
 
       for cell in row:
         j += 1 #Cell i,j
-        point = [i, j]
+        point = [j, i]
 
         if cell == 1:
           self.top_vertex_layer.append(tuple(point))
@@ -192,25 +191,25 @@ class FCC:
 
           try:
             if cells[i+1][j+1]:
-              self.top_face_layer.append((i + 0.5, j + 0.5))
+              self.top_face_layer.append((j + 0.5, i + 0.5))
           except:
             pass
 
           try:
             if cells[i+1][j-1]:
-              self.top_face_layer.append((i + 0.5, j - 0.5))
+              self.top_face_layer.append((j - 0.5, i + 0.5))
           except:
             pass
 
           try:
             if cells[i][j+1]:
-              self.intermediate_layer.append((i, j + 0.5))
+              self.intermediate_layer.append((j + 0.5, i))
           except:
             pass
 
           try:
             if cells[i + 1][j]:
-              self.intermediate_layer.append((i + 0.5, j))
+              self.intermediate_layer.append((j, i + 0.5))
           except:
             pass
 
@@ -220,7 +219,7 @@ class FCC:
     self.intermediate_layer = sorted(set(self.intermediate_layer))
 
     # Add Z position to atoms
-    atom_id = -1
+    atom_id = 0
 
     for z in xrange(int(math.ceil(float(self.configs['layers']) / 2))):
       for atom in self.top_vertex_layer:
