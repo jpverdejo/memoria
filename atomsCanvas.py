@@ -1,20 +1,13 @@
 import wx
 from wx import glcanvas
 from OpenGL.GL import *
-
-#from OpenGL import GLU
-#from OpenGL import GL
-#from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 import numpy as np
 import math
-import operator
 
 from PIL import Image
-
-from pprint import pprint
 
 class AtomsCanvas(glcanvas.GLCanvas):
   def __init__(self, parent):
@@ -33,7 +26,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
     self.lastmousey = self.mousey = 30
     self.size = None
     self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
-    self.Bind(wx.EVT_SIZE, self.OnSize)
     self.Bind(wx.EVT_PAINT, self.OnPaint)
     self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
     self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
@@ -41,7 +33,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
     self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
     self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
-    self.Bind(wx.EVT_SIZE, self.OnSize)
+    self.Bind(wx.EVT_SIZE, self.updateSize)
 
     self.atoms = []
     self.atoms_type = {}
@@ -67,6 +59,12 @@ class AtomsCanvas(glcanvas.GLCanvas):
   def updateSize(self, evt):
     size = self.GetSize()
     glViewport(0, 0, size.GetWidth(), size.GetHeight())
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(45.0, (size.GetWidth() + 0.0)/size.GetHeight(), 0.1, 100.0);
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+
     self.Refresh(False)
 
   def restartPosition(self):
@@ -89,9 +87,9 @@ class AtomsCanvas(glcanvas.GLCanvas):
     delta = 0.1
 
     if keycode == wx.WXK_UP:
-        self.translationY += delta
-    if keycode == wx.WXK_DOWN:
         self.translationY -= delta
+    if keycode == wx.WXK_DOWN:
+        self.translationY += delta
     if keycode == wx.WXK_LEFT:
         self.translationX -= delta
     if keycode == wx.WXK_RIGHT:
@@ -169,6 +167,9 @@ class AtomsCanvas(glcanvas.GLCanvas):
   def setDataset(self, atoms, dataset):
     self.mode = 'visualization'
     self.dataset = dataset
+    self.layersX = {}
+    self.layersY = {}
+    self.layersZ = {}
 
     Ts = dataset.keys()
     if len(Ts):
@@ -241,10 +242,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
   def OnEraseBackground(self, event):
     pass # Do nothing, to avoid flashing on screen.
 
-  def OnSize(self, event):
-    self.DoSetViewport()
-    event.Skip()
-
   def DoSetViewport(self):
     size = self.size = self.GetClientSize()
     size = min(size.width, size.height)
@@ -288,6 +285,8 @@ class AtomsCanvas(glcanvas.GLCanvas):
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
+
+    self.updateSize({})
 
   def getVectorColor(self, vector):
     x, y, z = vector
@@ -361,6 +360,15 @@ class AtomsCanvas(glcanvas.GLCanvas):
         return np.pi
     return angle
 
+  def export(self, filename):
+    self.SetCurrent(self.context)
+    # Export to PNG
+    size = self.GetClientSize()
+    data = glReadPixels(0, 0, size.width, size.height, GL_RGBA, GL_UNSIGNED_BYTE)
+    image = Image.fromstring("RGBA", (size.width, size.height), data)
+    image = image.transpose(Image.FLIP_TOP_BOTTOM)
+    image.save(filename, 'PNG')
+
   def OnDraw(self):
     self.SetCurrent(self.context)
     # clear color and depth buffers
@@ -422,14 +430,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
       glTranslate(-x, -y, -z)
 
     glPopMatrix()
-
-    # Export to PNG
-    # size = self.size = self.GetClientSize()
-    # size = min(size.width, size.height)
-    # data = glReadPixels(0, 0, size, size, GL_RGBA, GL_UNSIGNED_BYTE)
-    # image = Image.fromstring("RGBA", (size, size), data)
-    # image = image.transpose(Image.FLIP_TOP_BOTTOM)
-    # image.save('out.png', 'PNG')
 
     # push into visible buffer
     self.SwapBuffers()

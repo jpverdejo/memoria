@@ -1,20 +1,10 @@
 import wx
 from wx import glcanvas
 from OpenGL.GL import *
-
-#from OpenGL import GLU
-#from OpenGL import GL
-#from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-import numpy as np
-import math
-import operator
-
 from PIL import Image
-
-from pprint import pprint
 
 class Axes(glcanvas.GLCanvas):
   def __init__(self, parent):
@@ -67,6 +57,15 @@ class Axes(glcanvas.GLCanvas):
     wx.CallAfter(self.DoSetViewport)
     wx.CallAfter(self.OnDraw)
 
+  def export(self, filename):
+    self.SetCurrent(self.context)
+    # Export to PNG
+    size = self.GetClientSize()
+    data = glReadPixels(0, 0, size.width, size.height, GL_RGBA, GL_UNSIGNED_BYTE)
+    image = Image.fromstring("RGBA", (size.width, size.height), data)
+    image = image.transpose(Image.FLIP_TOP_BOTTOM)
+    image.save(filename, 'PNG')
+
   def OnDraw(self):
     self.SetCurrent(self.context)
     if glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
@@ -77,8 +76,7 @@ class Axes(glcanvas.GLCanvas):
       glRotate(180, 1, 0, 0)
 
       # Translate and rotate the image (or 'moving the camera')
-      # glTranslatef(self.parent.GetParent().GetParent().canvas.translationX, self.parent.GetParent().GetParent().canvas.translationY, self.parent.GetParent().GetParent().canvas.translationZ)
-      glTranslatef(0, 0, 3)
+      glTranslatef(0, 0, 3.5)
 
       glRotate(self.parent.GetParent().GetParent().canvas.rotationVectorY, 1, 0, 0)
       glRotate(self.parent.GetParent().GetParent().canvas.rotationVectorX, 0, 1, 0)
@@ -93,6 +91,13 @@ class Axes(glcanvas.GLCanvas):
       gluCylinder( z , 0.05 , 0.05 , length , 30 , 30 )
       glTranslate(0,0,length)
       glutSolidCone(0.1, 0.2, 30, 30)
+      glDisable(GL_LIGHTING)
+      glTranslate(0,0,0.3)
+      glColor(1, 0, 0)
+      glRasterPos2f( 0, 0 )
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 90)
+      glTranslate(0,0,-0.3)
+      glEnable(GL_LIGHTING)
       glTranslate(0,0,-length)
 
       glMaterialfv(GL_FRONT,GL_DIFFUSE,[0, 0, 1, 1])
@@ -101,6 +106,13 @@ class Axes(glcanvas.GLCanvas):
       gluCylinder( x , 0.05 , 0.05 , length , 30 , 30 )
       glTranslate(0,0,length)
       glutSolidCone(0.1, 0.2, 30, 30)
+      glDisable(GL_LIGHTING)
+      glColor(0,0,1)
+      glTranslate(0,0,0.3)
+      glRasterPos2f( 0, 0 )
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 88  )
+      glTranslate(0,0,-0.3)
+      glEnable(GL_LIGHTING)
       glTranslate(0,0,-length)
       glRotate(-90, 0, 1, 0)
 
@@ -110,6 +122,13 @@ class Axes(glcanvas.GLCanvas):
       gluCylinder( y , 0.05 , 0.05 , length , 30 , 30 )
       glTranslate(0,0,length)
       glutSolidCone(0.1, 0.2, 30, 30)
+      glDisable(GL_LIGHTING)
+      glColor(0,1,0)
+      glTranslate(0,0,0.3)
+      glRasterPos2f( 0, 0 )
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, 89)
+      glTranslate(0,0,-0.3)
+      glEnable(GL_LIGHTING)
       glTranslate(0,0,-length)
 
       glPopMatrix()
