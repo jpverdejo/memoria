@@ -154,7 +154,16 @@ class BitMapGrid(wx.grid.Grid):
       for i in xrange(rowStart, rowEnd+1):
         for j in xrange(colStart, colEnd+1):
           if not (i == self.GetGridCursorRow() and j==self.GetGridCursorCol() and self.lastClicked == self.lastSelected):
-            self.toggleCell(i, j)
+            if self.cells[i][j] == 0:
+              self.cells[i][j] = 1
+              self.SetCellBackgroundColour(i, j, "BLACK")
+            else:
+              self.cells[i][j] = 0
+              self.SetCellBackgroundColour(i, j, "WHITE")
+
+      self.ClearSelection()
+      self.ForceRefresh()
+      self.parent.updateParameters()
 
       evt.Skip()
 

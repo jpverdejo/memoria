@@ -9,6 +9,12 @@ import glob
 import os
 import re
 import wx.lib.plot as plot
+import cv2
+import numpy
+import time
+import gc
+
+from sys import platform as _platform
 
 from bitMapGrid import BitMapGrid
 from cubes import SC, FCC, BCC
@@ -24,10 +30,6 @@ class MolDesigner(wx.Frame):
 
     def __init__(self, parent):
         wx.Frame.__init__(self, None, -1, self.title)
-
-        iconFile = "images/icon.ico"
-        icon1 = wx.Icon(iconFile, wx.BITMAP_TYPE_ICO)
-        self.SetIcon(icon1)
 
         # Allow OS X users to close the window with Cmd+Q
         menubar = wx.MenuBar()
@@ -53,7 +55,7 @@ class MolDesigner(wx.Frame):
         self.canvas = AtomsCanvas(self)
 
         #Grid size
-        self.sizeBox = wx.StaticBox(self.designSidebarPanel, label='Grid size', size=(190, 200))
+        self.sizeBox = wx.StaticBox(self.designSidebarPanel, label='Grid size')
         self.sizeBoxSizer = wx.StaticBoxSizer(self.sizeBox, wx.VERTICAL)
 
         self.sizeBoxGrid = wx.GridSizer(1, 4, 10, 10)
@@ -76,14 +78,14 @@ class MolDesigner(wx.Frame):
         self.sizeBoxSizer.Add(self.sizeBoxGrid)
 
         #Object parameters
-        self.configBox = wx.StaticBox(self.designSidebarPanel, label='Object parameters', size=(190,200))
+        self.configBox = wx.StaticBox(self.designSidebarPanel, label='Object parameters')
         self.configBoxSizer = wx.StaticBoxSizer(self.configBox, wx.VERTICAL)
 
         self.configBoxGrid = wx.GridSizer(10, 2, 5, 5)
 
         # Number of layers
         self.configBoxLayersLabel = wx.StaticText(self.designSidebarPanel, label="Layers", size=(70,20))
-        self.configBoxLayersCtrl = wx.SpinCtrl(self.designSidebarPanel, value="3", initial=3, min=1, size=(50, 20))
+        self.configBoxLayersCtrl = wx.SpinCtrl(self.designSidebarPanel, value="3", initial=10, min=1, size=(50, 20))
 
         # Avoid bug on OS X that auto-focus on first field and hides the default value
         wx.CallAfter(self.configBoxLayersCtrl.SetFocus)
@@ -164,7 +166,7 @@ class MolDesigner(wx.Frame):
         self.configBoxSizer.Add(self.configBoxGrid)
 
         # Figures
-        self.figuresBox = wx.StaticBox(self.designSidebarPanel, label='Figures', size=(190,200))
+        self.figuresBox = wx.StaticBox(self.designSidebarPanel, label='Figures')
         self.figuresBoxSizer = wx.StaticBoxSizer(self.figuresBox, wx.VERTICAL)
 
         self.figuresBoxGrid = wx.FlexGridSizer(2, 1, 10, 10)
@@ -225,14 +227,18 @@ class MolDesigner(wx.Frame):
         self.clearButton = wx.Button(self.designSidebarPanel, label="Clear grid")
         self.clearButton.Bind(wx.EVT_BUTTON, self.clearGrid)
 
-        self.exportButton = wx.Button(self.designSidebarPanel, label="Export")
-        self.exportButton.Bind(wx.EVT_BUTTON, self.checkParametersTrigger)
+        self.exportFileButton = wx.Button(self.designSidebarPanel, label="Export Data")
+        self.exportFileButton.Bind(wx.EVT_BUTTON, self.checkParametersTrigger)
+
+        self.exportImagesButtonD = wx.Button(self.designSidebarPanel, label="Export Images")
+        self.exportImagesButtonD.Bind(wx.EVT_BUTTON, self.exportImagesD)
+        self.exportImagesButtonD.Show(False)
 
         self.previewButton = wx.Button(self.designSidebarPanel, label="Show/hide preview")
         self.previewButton.Bind(wx.EVT_BUTTON, self.togglePreview)
 
-        axesBoxD = wx.StaticBox(self.designSidebarPanel, label='Axes')
-        self.axesBoxSizerD = wx.StaticBoxSizer(axesBoxD, wx.VERTICAL)
+        self.axesBoxD = wx.StaticBox(self.designSidebarPanel, label='Axes')
+        self.axesBoxSizerD = wx.StaticBoxSizer(self.axesBoxD, wx.VERTICAL)
         self.axesD = Axes(self.designSidebarPanel)
         self.axesBoxSizerD.Add(self.axesD)
 
@@ -240,13 +246,15 @@ class MolDesigner(wx.Frame):
         self.designSidebar.Add(self.configBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         self.designSidebar.Add(self.figuresBoxSizer, 0, wx.EXPAND | wx.ALL, 5)
         self.designSidebar.Add(self.clearButton, 0, wx.EXPAND | wx.ALL, 5)
-        self.designSidebar.Add(self.exportButton, 0, wx.EXPAND | wx.ALL, 5)
+        self.designSidebar.Add(self.exportFileButton, 0, wx.EXPAND | wx.ALL, 5)
+        self.designSidebar.Add(self.exportImagesButtonD, 0, wx.EXPAND | wx.ALL, 5)
         self.designSidebar.Add(self.previewButton, 0, wx.EXPAND | wx.ALL, 5)
         self.designSidebar.Add(self.axesBoxSizerD, 0, wx.EXPAND | wx.ALL, 5)
 
         self.designSidebarPanel.SetSizer(self.designSidebar)
 
-        self.axesBoxSizerD.ShowItems(False)
+        wx.CallAfter(self.axesBoxD.Show, False)
+        wx.CallAfter(self.axesD.Show, False)
 
         self.visualizationSidebarPanel = scrolled.ScrolledPanel(tabs)
         visualizationSidebar = wx.BoxSizer(wx.VERTICAL)
@@ -255,21 +263,21 @@ class MolDesigner(wx.Frame):
 
         self.Bind(wx.EVT_BUTTON, self.openFileDialog, inputDirBtn)
 
-        self.statsBox = wx.StaticBox(self.visualizationSidebarPanel, label='Input Stats', size=(190, 200))
+        self.statsBox = wx.StaticBox(self.visualizationSidebarPanel, label='Input Stats')
         self.statsSizer = wx.StaticBoxSizer(self.statsBox, wx.VERTICAL)
 
         self.statsGrid = wx.GridSizer(2, 2, 5, 5)
 
-        statsValidPathLabel = wx.StaticText(self.statsBox, label="Valid Atom file")
-        self.statsValidPathValue = wx.StaticText(self.statsBox, label="--")
+        self.statsValidPathLabel = wx.StaticText(self.visualizationSidebarPanel, label="Valid Atom file")
+        self.statsValidPathValue = wx.StaticText(self.visualizationSidebarPanel, label="--")
 
-        statsNumberDataFilesLabel = wx.StaticText(self.statsBox, label="# of Data files")
-        self.statsNumberDataFilesValue = wx.StaticText(self.statsBox, label="--")
+        self.statsNumberDataFilesLabel = wx.StaticText(self.visualizationSidebarPanel, label="# of Data files")
+        self.statsNumberDataFilesValue = wx.StaticText(self.visualizationSidebarPanel, label="--")
 
         self.statsGrid.AddMany([
-            (statsValidPathLabel, 0, wx.EXPAND),
+            (self.statsValidPathLabel, 0, wx.EXPAND),
             (self.statsValidPathValue, 0, wx.EXPAND),
-            (statsNumberDataFilesLabel, 0, wx.EXPAND),
+            (self.statsNumberDataFilesLabel, 0, wx.EXPAND),
             (self.statsNumberDataFilesValue, 0, wx.EXPAND)
         ])
 
@@ -282,21 +290,21 @@ class MolDesigner(wx.Frame):
 
         self.readInputBtn.Bind(wx.EVT_BUTTON, self.readInputFiles)
 
-        viewModeBox = wx.StaticBox(self.visualizationSidebarPanel, label='View layer', size=(190, 200))
+        viewModeBox = wx.StaticBox(self.visualizationSidebarPanel, label='View layer')
         self.viewModeSizer = wx.StaticBoxSizer(viewModeBox, wx.VERTICAL)
 
         viewModeGrid = wx.FlexGridSizer(2, 4, 5, 5)
 
-        self.viewModeAllLayers = wx.RadioButton(viewModeBox, label='All', style=wx.RB_GROUP)
+        self.viewModeAllLayers = wx.RadioButton(self.visualizationSidebarPanel, label='All', style=wx.RB_GROUP)
 
-        self.viewModeLayerX = wx.RadioButton(viewModeBox, label='X')
-        self.viewLayerX = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
+        self.viewModeLayerX = wx.RadioButton(self.visualizationSidebarPanel, label='X')
+        self.viewLayerX = wx.ComboBox(self.visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
 
-        self.viewModeLayerY = wx.RadioButton(viewModeBox, label='Y')
-        self.viewLayerY = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
+        self.viewModeLayerY = wx.RadioButton(self.visualizationSidebarPanel, label='Y')
+        self.viewLayerY = wx.ComboBox(self.visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
 
-        self.viewModeLayerZ = wx.RadioButton(viewModeBox, label='Z')
-        self.viewLayerZ = wx.ComboBox(viewModeBox, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
+        self.viewModeLayerZ = wx.RadioButton(self.visualizationSidebarPanel, label='Z')
+        self.viewLayerZ = wx.ComboBox(self.visualizationSidebarPanel, choices=["0.000"], style=wx.CB_DROPDOWN|wx.CB_READONLY, size=(60, 27))
 
         self.viewModeAllLayers.SetValue(True)
         self.viewModeAllLayers.Enable(False)
@@ -329,11 +337,15 @@ class MolDesigner(wx.Frame):
 
         self.viewModeSizer.Add(viewModeGrid, flag=wx.ALL, border=1)
 
-        self.exportButton = wx.Button(self.visualizationSidebarPanel, label="Export")
-        self.exportButton.Bind(wx.EVT_BUTTON, self.exportImages)
-        self.exportButton.Show(False)
+        self.exportImagesButtonV = wx.Button(self.visualizationSidebarPanel, label="Export Images")
+        self.exportImagesButtonV.Bind(wx.EVT_BUTTON, self.exportImagesV)
+        self.exportImagesButtonV.Show(False)
 
-        controlsBox = wx.StaticBox(self.visualizationSidebarPanel, label='Controls', size=(190, 200))
+        self.exportVideoButton = wx.Button(self.visualizationSidebarPanel, label="Export Video")
+        self.exportVideoButton.Bind(wx.EVT_BUTTON, self.exportVideo)
+        self.exportVideoButton.Show(False)
+
+        controlsBox = wx.StaticBox(self.visualizationSidebarPanel, label='Controls')
         self.controlsSizer = wx.StaticBoxSizer(controlsBox, wx.VERTICAL)
 
         controlsGrid = wx.FlexGridSizer(1, 6, 5, 5)
@@ -345,11 +357,11 @@ class MolDesigner(wx.Frame):
         self.previousBitmap = wx.Bitmap("images/previous.png", wx.BITMAP_TYPE_ANY)
         self.nextBitmap = wx.Bitmap("images/next.png", wx.BITMAP_TYPE_ANY)
 
-        self.backBtn = wx.BitmapButton(controlsBox, -1, self.backBitmap, (0,0), ((30,30)))
-        self.previousBtn = wx.BitmapButton(controlsBox, -1, self.previousBitmap, (0,0), ((30,30)))
-        self.playStopBtn = wx.BitmapButton(controlsBox, -1, self.playBitmap, (0,0), ((30,30)))
-        self.nextBtn = wx.BitmapButton(controlsBox, -1, self.nextBitmap, (0,0), ((30,30)))
-        self.forwardBtn = wx.BitmapButton(controlsBox, -1, self.forwardBitmap, (0,0), ((30,30)))
+        self.backBtn = wx.BitmapButton(self.visualizationSidebarPanel, -1, self.backBitmap, (0,0), ((30,30)))
+        self.previousBtn = wx.BitmapButton(self.visualizationSidebarPanel, -1, self.previousBitmap, (0,0), ((30,30)))
+        self.playStopBtn = wx.BitmapButton(self.visualizationSidebarPanel, -1, self.playBitmap, (0,0), ((30,30)))
+        self.nextBtn = wx.BitmapButton(self.visualizationSidebarPanel, -1, self.nextBitmap, (0,0), ((30,30)))
+        self.forwardBtn = wx.BitmapButton(self.visualizationSidebarPanel, -1, self.forwardBitmap, (0,0), ((30,30)))
 
         self.previousBtn.Bind(wx.EVT_BUTTON, self.previousT)
         self.backBtn.Bind(wx.EVT_BUTTON, self.backT)
@@ -363,7 +375,7 @@ class MolDesigner(wx.Frame):
         self.forwardBtn.Enable(False)
         self.nextBtn.Enable(False)
 
-        self.currentTCtrl = wx.TextCtrl(controlsBox, value="0", style=wx.TE_CENTRE, size=(70, 10))
+        self.currentTCtrl = wx.TextCtrl(self.visualizationSidebarPanel, value="0", style=wx.TE_CENTRE, size=(70, 10))
         font = wx.Font(18, wx.SWISS, wx.NORMAL, wx.NORMAL)
         self.currentTCtrl.SetFont(font)
         self.currentTCtrl.Enable(False)
@@ -387,13 +399,15 @@ class MolDesigner(wx.Frame):
         self.axesV = Axes(self.visualizationSidebarPanel)
         axesBoxSizerV.Add(self.axesV)
 
-        self.plotBox = wx.StaticBox(self.visualizationSidebarPanel, label='Plot', size=(190, 200))
+        self.plotBox = wx.StaticBox(self.visualizationSidebarPanel, label='Plot')
         plotSizer = wx.StaticBoxSizer(self.plotBox, wx.VERTICAL)
 
-        self.plotter = plot.PlotCanvas(self.plotBox, size=(220, 220))
+        self.plotter = plot.PlotCanvas(self.visualizationSidebarPanel)
+        self.plotter.SetInitialSize(size=(220, 220))
         plotSizer.Add(self.plotter)
 
         self.plotBox.Show(False)
+        self.plotter.Show(False)
 
         visualizationSidebar.AddMany([
             (inputDirBtn, 0, wx.EXPAND | wx.ALL, 5),
@@ -401,7 +415,8 @@ class MolDesigner(wx.Frame):
             (self.readInputBtn, 0, wx.EXPAND | wx.ALL, 5),
             (self.controlsSizer, 0, wx.EXPAND | wx.ALL, 5),
             (self.viewModeSizer, 0, wx.EXPAND | wx.ALL, 5),
-            (self.exportButton, 0, wx.EXPAND | wx.ALL, 5),
+            (self.exportImagesButtonV, 0, wx.EXPAND | wx.ALL, 5),
+            (self.exportVideoButton, 0, wx.EXPAND | wx.ALL, 5),
             (axesBoxSizerV, 0, wx.EXPAND | wx.ALL, 5),
             (plotSizer, 0, wx.EXPAND | wx.ALL, 5)
         ])
@@ -587,11 +602,20 @@ class MolDesigner(wx.Frame):
         self.currentTCtrl.Enable(True)
 
         self.readInputBtn.Show(False)
-        self.exportButton.Show(True)
+        self.exportImagesButtonV.Show(True)
+
+        if _platform == "darwin":
+            self.exportVideoButton.Show(True)
+
         self.statsBox.Show(False)
+        self.statsValidPathLabel.Show(False)
+        self.statsValidPathValue.Show(False)
+        self.statsNumberDataFilesLabel.Show(False)
+        self.statsNumberDataFilesValue.Show(False)
         self.viewModeSizer.ShowItems(True)
         self.controlsSizer.ShowItems(True)
         self.plotBox.Show(True)
+        self.plotter.Show(True)
         self.designSidebarPanel.SetupScrolling(scroll_x=False)
         self.visualizationSidebarPanel.SetupScrolling(scroll_x=False)
         self.Layout()
@@ -620,7 +644,65 @@ class MolDesigner(wx.Frame):
         self.viewLayerZ.AppendItems(layersZ)
         self.viewLayerZ.SetSelection(0)
 
-    def exportImages(self, evt):
+    def exportImagesD(self, evt):
+        if self.atoms_file:
+            currentPath = os.path.dirname(self.atoms_file)
+
+        dlg = wx.DirDialog(self, message="Choose a directory",
+            style=wx.OPEN | wx.CHANGE_DIR
+        )
+
+        exportDir = None
+
+        if dlg.ShowModal() == wx.ID_OK:
+            exportDir = dlg.GetPath()
+
+        dlg.Destroy()
+
+        if exportDir:
+            os.chdir(exportDir)
+
+            existingFiles = []
+
+            files = ['atoms.png', 'axes.png']
+
+            for f in files:
+                if os.path.isfile(f):
+                    existingFiles.append(f)
+
+            write = True
+            if len(existingFiles):
+                write = False
+
+                dlg = wx.MessageDialog(self,
+                    'The following files already exists on the directory:\n\n%s' % ('\n'.join(existingFiles)),
+                    'Overwrite files',
+                    wx.OK | wx.CANCEL | wx.ICON_WARNING
+                )
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    write = True
+
+                dlg.Destroy()
+
+            if write:
+                self.canvas.export('atoms.png')
+                self.axesD.export('axes.png')
+
+                dlg = wx.MessageDialog(self,
+                    'The files were exported succesfully.',
+                    'Files exported',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+
+                dlg.ShowModal()
+
+                dlg.Destroy()
+
+            if self.atoms_file:
+                os.chdir(currentPath)
+
+    def exportImagesV(self, evt):
         currentPath = os.path.dirname(self.atoms_file)
 
         dlg = wx.DirDialog(self, message="Choose a directory",
@@ -677,6 +759,110 @@ class MolDesigner(wx.Frame):
 
             os.chdir(currentPath)
 
+    def exportVideo(self, evt):
+        currentPath = os.path.dirname(self.atoms_file)
+
+        dlg = wx.DirDialog(self, message="Choose a directory",
+            style=wx.OPEN | wx.CHANGE_DIR
+        )
+
+        exportDir = None
+
+        if dlg.ShowModal() == wx.ID_OK:
+            exportDir = dlg.GetPath()
+
+        dlg.Destroy()
+
+        if exportDir:
+            os.chdir(exportDir)
+
+            existingFiles = []
+
+            files = ['output.avi']
+
+            for f in files:
+                if os.path.isfile(f):
+                    existingFiles.append(f)
+
+            write = True
+            if len(existingFiles):
+                write = False
+
+                dlg = wx.MessageDialog(self,
+                    'The following files already exists on the directory:\n\n%s' % ('\n'.join(existingFiles)),
+                    'Overwrite files',
+                    wx.OK | wx.CANCEL | wx.ICON_WARNING
+                )
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    write = True
+
+                dlg.Destroy()
+
+            if write:
+                Ts = self.canvas.dataset.keys()
+                Ts.sort()
+
+                dlg = wx.ProgressDialog("Creating video",
+                                       "",
+                                       maximum = len(Ts),
+                                       parent=self,
+                                       style = 0
+                                        | wx.PD_APP_MODAL
+                                        | wx.PD_CAN_ABORT
+                                        #| wx.PD_CAN_SKIP
+                                        #| wx.PD_ELAPSED_TIME
+                                        | wx.PD_ESTIMATED_TIME
+                                        | wx.PD_REMAINING_TIME
+                                        #| wx.PD_AUTO_HIDE
+                                        )
+
+                t = Ts.pop(0)
+                self.currentTCtrl.ChangeValue(str(t))
+                self.canvas.currentT = t
+                self.canvas.OnDraw()
+
+                canvas_image = self.canvas.getCurrentImage()
+                image = numpy.asarray(canvas_image)
+
+                height, width, layers =  image.shape
+
+                fps = 15
+                capSize = (width,height)
+                fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')
+                video = cv2.VideoWriter()
+                success = video.open('output.avi',fourcc,fps,capSize,True)
+
+                video.write(image)
+
+                keepGoing = True
+                count = 1
+
+                while len(Ts) and keepGoing:
+                    t = Ts.pop(0)
+                    count += 1
+
+                    self.canvas.currentT = t
+                    self.canvas.OnDraw()
+
+                    canvas_image = self.canvas.getCurrentImage()
+                    image = numpy.asarray(canvas_image)
+
+                    video.write(image)
+                    if count%10 == 0:
+                        self.currentTCtrl.ChangeValue(str(t))
+                        (keepGoing, skip) = dlg.Update(count)
+
+                    gc.collect()
+
+                cv2.destroyAllWindows()
+                video.release()
+
+                dlg.Destroy()
+
+                video = None
+
+        os.chdir(os.path.dirname(self.atoms_file))
 
     def plot(self, data, markerPoint, axis, max_y):
         line = plot.PolyLine(data, colour='red', width=1)
@@ -686,7 +872,7 @@ class MolDesigner(wx.Frame):
 
         max_y += 0.5
 
-        self.plotter.Draw(gc, xAxis=(-1.5,1.5), yAxis=(-max_y,max_y))
+        self.plotter.Draw(gc, yAxis=(-1.5,1.5), xAxis=(-max_y,max_y))
 
     def startCurrentTTimer(self, evt):
         self.currentTTimer.Start(500, wx.TIMER_ONE_SHOT)
@@ -802,12 +988,12 @@ class MolDesigner(wx.Frame):
         plotData = self.canvas.plotData
         axis = self.canvas.colorDirection
         max_y = self.canvas.dataset[min_t]['intensity']
-        markerPoint = (self.canvas.dataset[t]['Mx'], self.canvas.dataset[t]['intensity'])
+        markerPoint = (self.canvas.dataset[t]['intensity'], self.canvas.dataset[t]['Mx'])
 
         if axis == 'y':
-            markerPoint = (self.canvas.dataset[t]['My'], self.canvas.dataset[t]['intensity'])
+            markerPoint = (self.canvas.dataset[t]['intensity'], self.canvas.dataset[t]['My'])
         if axis == 'z':
-            markerPoint = (self.canvas.dataset[t]['Mz'], self.canvas.dataset[t]['intensity'])
+            markerPoint = (self.canvas.dataset[t]['intensity'], self.canvas.dataset[t]['Mz'])
 
         self.plot(plotData, markerPoint, axis, max_y)
 
@@ -849,11 +1035,17 @@ class MolDesigner(wx.Frame):
         self.viewModeLayerZ.Enable(False)
 
         self.readInputBtn.Show(True)
-        self.exportButton.Show(False)
+        self.exportImagesButtonV.Show(False)
+        self.exportVideoButton.Show(False)
         self.statsBox.Show(True)
+        self.statsValidPathLabel.Show(True)
+        self.statsValidPathValue.Show(True)
+        self.statsNumberDataFilesLabel.Show(True)
+        self.statsNumberDataFilesValue.Show(True)
         self.viewModeSizer.ShowItems(False)
         self.controlsSizer.ShowItems(False)
         self.plotBox.Show(False)
+        self.plotter.Show(False)
         self.Layout()
 
         self.canvas.playStatus = 'stop'
@@ -882,8 +1074,10 @@ class MolDesigner(wx.Frame):
             self.grid.Show()
             self.togglePreviewStatus = 0
             self.designSidebar.ShowItems(True)
-            self.axesBoxSizerD.ShowItems(False)
+            self.axesD.Show(False)
+            self.axesBoxD.Show(False)
             self.sizeBoxSizer.ShowItems(True)
+            self.exportImagesButtonD.Show(False)
             self.figuresBoxSizer.ShowItems(True)
             self.allowParameterInput(True)
         else:
@@ -894,12 +1088,19 @@ class MolDesigner(wx.Frame):
             self.grid.Hide()
             self.designSidebar.ShowItems(False)
             self.readInputBtn.Show(True)
-            self.exportButton.Show(False)
+            self.exportImagesButtonV.Show(False)
+            self.exportVideoButton.Show(False)
             self.statsBox.Show(True)
+            self.statsValidPathLabel.Show(True)
+            self.statsValidPathValue.Show(True)
+            self.statsNumberDataFilesLabel.Show(True)
+            self.statsNumberDataFilesValue.Show(True)
             self.viewModeSizer.ShowItems(False)
             self.controlsSizer.ShowItems(False)
             self.plotBox.Show(False)
-            self.axesBoxSizerD.ShowItems(True)
+            self.plotter.Show(False)
+            self.axesD.Show(True)
+            self.axesBoxD.Show(True)
             self.togglePreviewStatus = 1
             self.allowParameterInput(False)
         self.Layout()
@@ -1143,22 +1344,26 @@ class MolDesigner(wx.Frame):
                 dlg.Destroy()
 
     def togglePreview(self, evt):
-        self.checkParameters()
-        self.canvas.setAtoms(self.cube.atoms, self.cube.atom_type)
-        self.canvas.restartPosition()
         if self.togglePreviewStatus:
             self.canvas.Hide()
             self.grid.Show()
             self.togglePreviewStatus = 0
-            self.axesBoxSizerD.ShowItems(False)
+            self.axesD.Show(False)
+            self.axesBoxD.Show(False)
+            self.exportImagesButtonD.Show(False)
             self.sizeBoxSizer.ShowItems(True)
             self.figuresBoxSizer.ShowItems(True)
             self.allowParameterInput(True)
         else:
+            self.checkParameters()
+            self.canvas.setAtoms(self.cube.atoms, self.cube.atom_type)
+            self.canvas.restartPosition()
             self.canvas.Show()
             self.grid.Hide()
             self.togglePreviewStatus = 1
-            self.axesBoxSizerD.ShowItems(True)
+            self.axesD.Show(True)
+            self.axesBoxD.Show(True)
+            self.exportImagesButtonD.Show(True)
             self.sizeBoxSizer.ShowItems(False)
             self.figuresBoxSizer.ShowItems(False)
             self.allowParameterInput(False)

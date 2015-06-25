@@ -68,7 +68,7 @@ class Axes(glcanvas.GLCanvas):
 
   def OnDraw(self):
     self.SetCurrent(self.context)
-    if glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
+    if (not bool(glCheckFramebufferStatus)) or glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
       # clear color and depth buffers
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 

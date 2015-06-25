@@ -1,0 +1,139 @@
+\chapter{Arquitectura de la solución}
+\label{cap:arquitectura}
+
+
+\section{Clases}
+
+Para el desarrollo de la aplicación se usó el lenguaje Python, dividiendo la aplicación en clases que se pueden categorizar de la siguiente forma:
+
+\subsection{Clases visuales}
+
+\subsubsection{MolDesigner}
+Esta es la clase principal del programa, ya que es la encargada de iniciar el programa, cargando todas las dependencias necesarias para su ejecución, pero principalmente tiene la lógica de la parte visual del \emph{software}, es decir, de la creación y distribución en pantalla de los distintos elementos visuales, como ventanas, botones, campos de texto, etc., además de la interacción del usuario con estos. Cada reacción a una acción ejecutada sobre estos elementos es orquestada por esta clase.
+
+\subsubsection{BitmapGrid}
+La clase BitmapGrid es la encargada de manejar la grilla con la cuales los cientificos diseñarán los objetos sobre los cuales se simulará, para esto se basa en la biblioteca \emph{wx.grid} de \emph{wxPython}, una implementación de una planilla de cálculos tipo \emph{excel}, la cual es modificada para no poder ser editada y que las distintas acciones del \emph{mouse} sobre esta (click, seleccionar fila o columna, seleccionar un rango de celdas, etc.) generen cambios en el color de fondo de cada celda, pudiendo este ser negro o blanco, transformando esta planilla de cálculos en un mapa de bits binario.
+
+Entre las características de este mapa de bits se encuentra la capacidad de crear figuras predefinidas rápidamente, por ejemplo, se puede dibujar un cuadrilátero indicando el ancho, el alto y seleccionando la esquina superior derecha de esta figura. También es posible crear un círculo indicando el radio que tendrá este y su centro.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.5]{images/bitmapGrid}
+  \caption{\em Mapa de bits binario con 2 figuras pre-diseñadas.}
+\end{figure}
+
+\subsection{Clases 3D}
+
+Estas clases son las encargadas de manejar los distintos \emph{canvas} que se usan en el \emph{software}, tanto para la visualización del diseño y del resultado de la simulación, como para ayudas referenciales para los científicos.
+
+\subsubsection{AtomCanvas}
+
+La clase AtomCanvas es la más importante con respecto a la visualización 3D, ya que es la encargada de mostrar en pantalla tanto el diseño de los objetos sobre los cuales se correrá la simulación como los resultados de estas usando OpenGL. En el desarrollo de esta se puso énfasis en la optimización, pudiendo mostrar sin mayores demoras más de 20.000 átomos, para tener una idea un sistema promedio analizado por los científicos usa 3.000 átomos (TODO: CONFIRMAR).
+
+Otra de las tareas de esta clase es manejar las distintas interacciones del usuario, tanto con el teclado como con el \emph{mouse} con las representaciones en 3D, como rotaciones, movimientos y \emph{zoom}.
+
+Para la visualización del diseño se usan esferas de distintos colores, representando cada uno de los distintos tipos de átomos que pueden haber según la estructura cúbica elegida. En las siguientes imágenes se representan una estructura de 5x5, con 3 capas, siendo solo diferente la estructura cúbica elegida.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/atomCanvas-SC}
+  \caption{\em En un SC todos los átomos son blancos.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/atomCanvas-BCC}
+  \caption{\em En un BCC los átomos centrales son rojos.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.35]{images/atomCanvas-FCC}
+  \caption{\em En un FCC los átomos de las caras son amarillos.}
+\end{figure}
+
+En el caso de la visualización de resultados se usan flechas de colores como representación. Para asignar un color a una flecha se parte de la premisa que en tiempo t=0 el campo magnético está cargado hacia un eje, es decir, todos los vectores serán iguales, teniendo la misma magnitud, sentido y dirección, estando este paralelo a uno de los ejes del plano coordenado; además se sabe que en ese momento su magnitud es máxima. Si inicialmente todos los vectores son paralelos al eje A, se usará la componente â de cada vector para definir el color, si la componente es 0 será de color verde, si la magnitud es máxima en sentido contrario a los vectores iniciales el color será azul, si la magnitud es máxima en el mismo sentido de los vectores iniciales el color será rojo. Como se puede inferir la escala va desde azul a rojo, siendo este último color el inicial para todos los vectores.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.5]{images/atomCanvas-colorScale}
+  \caption{\em Escala de colores de azul a rojo.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/atomCanvas-vectores-inicial}
+  \caption{\em Estado inicial de la visualización, con todos los vectores rojos cargados al eje X.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/atomCanvas-vectores-colores}
+  \caption{\em Vectores de distintos colores segun la componente î.}
+\end{figure}
+
+\subsubsection{Axes}
+
+La clase Axes es la encargada de mostrar los ejes coordenados de los distintos canvas, tanto del de diseño de objetos como el de visualización de resultados, usando Open GL.
+Cada eje se representa con su propio color, usando azul, rojo y verde para los ejes X, Y y Z respectivamente, y una etiqueta con el mismo color, de forma de hacerlo fácil de visualizar para el usuario.
+Debido al diseño del \emph{software}, donde las distintas funciones del programa (diseño y visualización) se seleccionan mediante pestañas, esta clase debe ser instanciada 2 veces, ya que no es posible usar la misma instancia en ambas secciones. Estas se comunican directamente con AtomCanvas para obtener los distintos parametros de rotación de forma que los ejes sean coherentes a la imagen mostrada.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=1]{images/axes}
+  \caption{\em Representación visual de los ejes coordenados.}
+\end{figure}
+
+\subsection{Clases de cubos}
+
+Las clases de cubos son 3 clases hermanas que calculan los átomos de un objeto que se está diseñando, todas tienen solo 2 métodos: \emph{calculate} y \emph{find\_neighborhood}, el primero se encarga de identificar todos los átomos que aplican dados los parametros físicos como la estructura de la primera capa, luego el segundo busca, para cada átomo, todos sus vecinos inmediatos, estos parametros son necesarios para exportar el archivo que luego servirá de entrada para la simulación.
+
+\subsubsection{SC}
+SC es la clase que maneja los cubos simples (\emph{Simple Cubic} o \emph{SC}), estas estructuras cúbicas se caracterizan por tener un átomo en cada uno de sus vértices, por lo que el cálculo de sus átomos se reduce a simplemente repetir la capa superior tantas veces como sea indicado en la entrada de propiedades físicas. Para encontrar el vecindario es necesario buscar todos los átomos que estén en las siguientes posiciones relativas [-1,0,0], [1,0,0], [0,-1,0], [0,1,0], [0,0,-1] y [0,0,1], por lo que el tamaño máximo de su vecindad es de 6 átomos.
+
+\subsubsection{BCC}
+BCC es la clase que maneja los cubos centrados en el cuerpo (\emph{Body Centered Cubic} o \emph{BCC}), que son las estructuras cúbicas que además de tener un átomo en cada vértice de los cubos tienen uno en el centro de cada uno de estos, de tal forma que en el cálculo de átomos se debe trabajar con una capa intermedia que contendrá los centros de cada cubo, de tal forma que para una estructura de 5 capas quedaría así:
+\begin{center}
+  \begin{tabular}{ c | l }
+    \# & Capa \\
+    \hline
+    1 & Primaria \\
+    2 & Intermedia \\
+    3 & Primaria \\
+    4 & Intermedia \\
+    5 & Primaria \\
+    \hline
+  \end{tabular}
+\end{center}
+
+La regla para agregar un átomo central es que debe tener un cubo de átomos a su alrededor, en caso de que el cubo no esté completo simplemente se usarán las capas primarias:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/BCC-incomplete-molecule}
+  \caption{\em Cubo BCC incompleto, sin átomo central}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/BCC-complete-molecule}
+  \caption{\em Cubo BCC completo, con átomo central}
+\end{figure}
+
+En el caso de los BCC los átomos que conforman la vecindad siempre estarán en las posiciones relativas $[\pm 0.5, \pm 0.5, \pm 0.5]$, es decir, cada átomo puede tener una vecindad compuesta por hasta 8 átomos.
+
+\subsubsection{FCC}
+FCC es la clase que maneja los cubos centrados en las caras (\emph{Face Centered Cubic} o \emph{FCC}), los cuales se caracterizan por tener un átomo extra por cara además de uno en cada uno de sus vertices, por lo que además de tener que crear una capa intermedia es necesario modificar la capa primaria, es decir, la que crea el usuario usando el mapa de bits. La regla para agregar estos átomos en las caras es que esté en la diagonal creada por otros 2 átomos, en cualquier dirección. En la siguiente imagen se ve una estructura cúbica de 1x2, como en una de sus caras se forma una diagonal entre 2 átomos se agrega uno extra en una capa intermedia.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.3]{images/FCC-diagonal}
+  \caption{\em Estructura cúbica FCC, con átomo en una de sus caras}
+\end{figure}
+
+La vecindad de estas estructuras cúbicas está dada por la posición relativa dada por $[\alpha, \beta, \gamma]$, donde:
+
+$ (\alpha = \pm 0.5; \beta = \pm 0.5; \gamma = 0) \vee (\alpha = \pm 0.5; \beta = 0; \gamma = \pm 0.5) \vee (\alpha = 0; \beta = \pm 0.5; \gamma = \pm 0.5)$
+
+Lo que en su combinatoria resulta 12 posiciones, siendo este el número máximo de átomos en una vecindad.
+

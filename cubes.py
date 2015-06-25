@@ -60,7 +60,7 @@ class SC:
         neighbor = tuple(map(operator.add, atom, delta))
         neighbor_key = "_".join(str(x) for x in neighbor)
 
-        if neighbor_key in self.atom_per_position.keys():
+        if neighbor_key in self.atom_per_position:
           neighbors.append(self.atom_per_position[neighbor_key])
 
       self.neighborhood[atom_id] = neighbors
@@ -148,7 +148,7 @@ class BCC:
 
         neighbor_key = "_".join(str(x) for x in neighbor)
 
-        if neighbor_key in self.atom_per_position.keys():
+        if neighbor_key in self.atom_per_position:
           neighbors.append(self.atom_per_position[neighbor_key])
 
       self.neighborhood[atom_id] = neighbors
@@ -267,7 +267,7 @@ class FCC:
 
         neighbor_key = "_".join(str(x) for x in neighbor)
 
-        if neighbor_key in self.atom_per_position.keys():
+        if neighbor_key in self.atom_per_position:
           neighbors.append(self.atom_per_position[neighbor_key])
 
       self.neighborhood[atom_id] = neighbors

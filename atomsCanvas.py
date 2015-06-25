@@ -7,6 +7,10 @@ from OpenGL.GLUT import *
 import numpy as np
 import math
 
+import sys
+
+import time
+
 from PIL import Image
 
 class AtomsCanvas(glcanvas.GLCanvas):
@@ -17,6 +21,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
     self.height = 560
 
     glcanvas.GLCanvas.__init__(self, parent, -1)
+    glutInit(sys.argv)
 
     self.init = False
     self.context = glcanvas.GLContext(self)
@@ -55,6 +60,8 @@ class AtomsCanvas(glcanvas.GLCanvas):
     self.Bind(wx.EVT_TIMER, self.play, self.playTimer)
 
     self.restartPosition()
+
+    wx.CallAfter(self.updateSize, {})
 
   def updateSize(self, evt):
     size = self.GetSize()
@@ -204,7 +211,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
       if self.colorDirection == 'z':
         M = data['Mz']
 
-      self.plotData.append((M, data['intensity']))
+      self.plotData.append((data['intensity'], M))
 
     self.atoms = {}
 
@@ -318,11 +325,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
     angle_radians = self.angle_between(vector, (0,0,1))
     angle = math.degrees(angle_radians)
 
-    # print vector
-    # print perpendicular_vector
-    # print angle_radians
-    # print angle
-
     vx, vy, vz = perpendicular_vector
 
     glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
@@ -360,78 +362,91 @@ class AtomsCanvas(glcanvas.GLCanvas):
         return np.pi
     return angle
 
-  def export(self, filename):
+  def getCurrentImage(self):
+    start = time.clock()
     self.SetCurrent(self.context)
     # Export to PNG
     size = self.GetClientSize()
     data = glReadPixels(0, 0, size.width, size.height, GL_RGBA, GL_UNSIGNED_BYTE)
     image = Image.fromstring("RGBA", (size.width, size.height), data)
     image = image.transpose(Image.FLIP_TOP_BOTTOM)
+    # print "get image: %f" % (time.clock() - start)
+
+    return image
+
+  def export(self, filename):
+    image = self.getCurrentImage()
     image.save(filename, 'PNG')
 
   def OnDraw(self):
     self.SetCurrent(self.context)
-    # clear color and depth buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    if (not bool(glCheckFramebufferStatus)) or glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
+      # clear color and depth buffers
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-    glLoadIdentity();
-    glRotate(180, 1, 0, 0)
-    # Translate and rotate the image (or 'moving the camera')
-    glTranslatef(self.translationX, self.translationY, self.translationZ)
+      glLoadIdentity();
+      glRotate(180, 1, 0, 0)
+      # Translate and rotate the image (or 'moving the camera')
+      glTranslatef(self.translationX, self.translationY, self.translationZ)
 
-    glRotate(self.rotationVectorY, 1, 0, 0)
-    glRotate(self.rotationVectorX, 0, 1, 0)
-    glRotate(self.rotationVectorZ, 0, 0, 1)
+      glRotate(self.rotationVectorY, 1, 0, 0)
+      glRotate(self.rotationVectorX, 0, 1, 0)
+      glRotate(self.rotationVectorZ, 0, 0, 1)
 
-    colors = {
-      'vertex': [1, 1, 1, 1],
-      'body': [1, 0, 0, 1],
-      'face': [1, 1, 0, 1]
-    }
+      # Default color
+      color = [1, 1, 1, 1]
+      glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
 
-    glPushMatrix()
+      colors = {
+        'vertex': [1, 1, 1, 1],
+        'body': [1, 0, 0, 1],
+        'face': [1, 1, 0, 1]
+      }
 
-    if self.mode == 'design' or self.viewMode == 'all':
-      atoms = self.atoms
-    else:
-      layers = self.layersX
+      glPushMatrix()
 
-      atoms = {}
-
-      if self.viewMode == 'y':
-        layers = self.layersY
-      if self.viewMode == 'z':
-        layers = self.layersZ
-
-      if self.viewLayer in layers:
-        layer = layers[self.viewLayer]
-
-        for atom_id in layer:
-          atoms[atom_id] = self.atoms[atom_id]
-
-    atoms = self.centerObject(atoms)
-    for atom_id, atom in atoms.iteritems():
-      x, y, z = atom
-
-      atom_key = "_".join(str(x) for x in atom)
-
-      glTranslate(x, y, z)
-
-      if self.mode == 'design':
-        color = colors[self.atoms_type[atom_id]]
-        glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
-
-        glutSolidSphere(0.2, 30, 30)
+      if self.mode == 'design' or self.viewMode == 'all':
+        atoms = self.atoms
       else:
-        dataset = self.dataset[self.currentT]['atoms']
-        vector = dataset[atom_id]
-        self.drawVector(vector)
+        layers = self.layersX
 
-      glTranslate(-x, -y, -z)
+        atoms = {}
 
-    glPopMatrix()
+        if self.viewMode == 'y':
+          layers = self.layersY
+        if self.viewMode == 'z':
+          layers = self.layersZ
 
-    # push into visible buffer
-    self.SwapBuffers()
+        if self.viewLayer in layers:
+          layer = layers[self.viewLayer]
 
-    self.Refresh(False)
+          for atom_id in layer:
+            atoms[atom_id] = self.atoms[atom_id]
+
+      atoms = self.centerObject(atoms)
+
+      for atom_id, atom in atoms.iteritems():
+        x, y, z = atom
+
+        glTranslate(x, y, z)
+
+        if self.mode == 'design':
+          atom_color = colors[self.atoms_type[atom_id]]
+          if atom_color != color:
+            color = atom_color
+            glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
+
+          glutSolidSphere(0.2, 15, 15)
+        else:
+          dataset = self.dataset[self.currentT]['atoms']
+          vector = dataset[atom_id]
+          self.drawVector(vector)
+
+        glTranslate(-x, -y, -z)
+
+      glPopMatrix()
+
+      # push into visible buffer
+      self.SwapBuffers()
+
+      self.Refresh(False)

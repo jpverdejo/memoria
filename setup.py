@@ -8,12 +8,12 @@ Usage:
 from setuptools import setup
 
 APP = ['MolDesigner.py']
-DATA_FILES = [('', ['images'])]
+DATA_FILES = [('images', ['images/back.png','images/forward.png','images/next.png','images/pause.png','images/play.png','images/previous.png'])]
 OPTIONS = {
 	'argv_emulation': True,
 	'optimize': 2,
 	'iconfile':'images/icon.icns',
-	'includes': ['wx', 'OpenGL.GL', 'OpenGL.GLU', 'OpenGL.GLUT', 'numpy', 'PIL.Image']
+	'includes': ['wx', 'OpenGL.GL', 'OpenGL.GLU', 'OpenGL.GLUT', 'numpy', 'PIL']
 }
 
 setup(
