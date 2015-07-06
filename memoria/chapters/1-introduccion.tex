@@ -14,33 +14,121 @@ Es aquí donde la informática puede contribuir, creando aplicaciones que mejore
 \section{Descripci\'on del problema}
 \label{intro:problema}
 
-Los científicos no disponen de una herramienta automatizada de diseño de objetos para aplicar la simulación MonteCarlo, que permita definir características físicas y geométricas y crear un archivo de entrada, que describa cada uno de los átomos, para la simulación, la cual es hecha por un software escrito en C por un anterior tesista del Departamento. Además se necesita que la herramienta permita mejorar el proceso de análisis y publicación de los resultados entregados por esta simulación.
+Actualmente no existe un método estándar de diseño de objetos para aplicar la simulación Monte Carlo, que permita definir características físicas y geométricas y crear un archivo de entrada, que describa cada uno de los átomos, para la simulación, por lo que cada nuevo investigador en general usa como base las herramientas generadas por antiguos tesistas y lo van modificando para aplicarlo a sus investigaciones. Tampoco existe una solución para la visualización de los resultados entregados y la posterior exportación de estos para publicaciones y conferencias.
 
-\section{Estado del arte}
+\section{Proceso actual}
 
-\subsection{Proceso actual}
-Actualmente los investigadores deben preparar la simulación usando un \emph{script} en Matlab\textregistered, el cual analiza un archivo \emph{.bmp} creado en \emph{Microsoft Paint\textregistered}, esta imagen generalmente es pequeña, menor a 50px x 50px, y representa la primera capa del objeto (mirado desde arriba), para esto se marcan los pixeles que describen el objeto, de esta forma el mapa de \emph{bits} es binario, si un \emph{pixel} es negro se considera un 1, si es blanco se considera un 0. En este \emph{script} se describen características específicas del objeto que se quiere definir, entre ellos:
-\begin{itemize}
-	\item Número de capas: Cuantas veces se repite la primera capa para formar un objeto en 3D.
-	\item Distribución de los átomos (ver anexo A): Como premisa se trabaja sólo con distribuciones cúbicas de átomos, no obstante estas distribuciones tienen ciertas características específicas, por ejemplo:
-	\begin{itemize}
-		\item Cúbico simple (SC por \emph{Simple Cubic}): En cada vértice de una distribución cúbica se encuentra un átomo.
-		\item Centrado en las caras (FCC por \emph{Face-centered Cubic}): Además del átomo en cada vértice de la distribución cúbica, hay un átomo en el centro de cada cara de la distribución.
-		\item Centrado (BCC por \emph{Body-centered Cubic}):  Además del átomo en cada vértice de la distribución cúbica, hay un átomo en el centro de cada distribución.
-	\end{itemize}
-	\item Coeficiente de escalamiento: Es un coeficiente usado para dar al objeto las medidas deseadas para ejecutar la simulación.
-\end{itemize}
+\subsection{Diseño de objetos para simular}
 
-Este proceso produce un archivo de texto plano describiendo cada uno de los átomos del objeto sobre el cuál se aplicará la simulación.
+Actualmente los científicos no tienen un proceso definido y formal de creación de objetos sobre los cuales se van a simular, ya que existen diversas soluciones implementadas a través del tiempo, desde \emph{scripts} que fueron creados especialmente para diseñar un objeto en específico hasta uno más flexible, pero igualmente engorroso, usando como base un mapa de bits.
 
-Luego de ejecutada la simulación el software entrega múltiples archivos de texto, uno que define cada uno de los átomos con un ID y una posición en el espacio, y N archivos que definen la fuerza magnética de cada átomo en un tiempo dado. Los científicos deben seleccionar uno de estos archivos y aplicar un \emph{script} de Matlab\textregistered\ para poder visualizar el resultado.
 
-El proceso de exportación de imágenes para publicaciones puede tomar un día de trabajo para los científicos, ya que deben hacer ``ensayo y error'' hasta que la imagen producida refleje lo que desean. Luego deben esperar por la aprobación por parte del profesor guía, en caso de ser rechazada, deben volver a ejecutar el proceso.
+\subsubsection{Diseño programático de objetos}
 
-\subsection{Soluciones similares}
-Existe una herramienta que hace simulaciones similares a las que hace el grupo de científicos llamada ``Go Parallel Magnet\textregistered''. A pesar de que la simulación no es exactamente la misma, el flujo de diseño es útil para el proyecto. Sin ir más lejos los científicos basan el proceso actual en éste.
+La primera opción para diseñar objetos sobre los cuales se correra la simulación es de manera programática, es decir, escribiendo un \emph{script} que defina todas las partículas de un objeto y sus vecindades, para alguien con experiencia en esta área puede ser relativamente sencillo diseñar algunos objetos regulares, como por ejemplo un cilindro, no obstante esto se complica si se quieren diseñar estructuras irregulares. Dado que la visualización del objeto diseñado es de muy baja calidad con este sistema es fácil cometer errores que eventualmente pueden invalidar los resultados de una simulación.
 
-``Go Parallel Magnet\textregistered'' usa para el diseño un sistema de multi-capas, donde se define la capa superior del objeto y se indica la cantidad de veces que ésta se repetirá. Con estos datos se crea un objeto en 3D que luego se transforma en la estructura molecular deseada.
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.6]{images/procesoActualScript}
+  \caption{\em Ejemplo de imagen salida de un \emph{script} de generación de objeto}
+\end{figure}
+
+\subsubsection{Diseño en base a mapa de bits}
+\label{intro:procesoactualmapa}
+
+\noindent
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.5]{images/procesoActualBitmapFlujo}
+  \caption{\em Flujo para creación de diseño en base a mapa de bits}
+\end{figure}
+
+Para flexibilizar el diseño de objetos y bajar la posibilidad de errores se creó un sistema que permite hacer este proceso basándose en un mapa de bits, de tal forma que ya no fuese necesario programar todo desde cero, si no que bastaba con crear una imagen que representara la primera capa del objeto y usar el script correcto en base a los parámetro físicos de este.
+
+Para iniciar este proceso es necesario tener un editor de imágenes que permita crear archivos .bmp, como por ejemplo Microsoft Paint\textsuperscript{\textregistered}, luego crear una imagen del tamaño deseado, la cual usualmente no excede los 50px x 50px, y ampliarla al máximo de forma de poder trabajar a nivel de pixeles. Luego se deben pintar, con color negro, los pixeles que representen la primera capa de átomos del objeto, estos pixeles luego serán identificados por un \emph{script} de \emph{Matlab}.
+
+En la siguiente imagen se muestra un ejemplo de estos mapas, usando una imagen de 10px x 10px, con una cruz centrada.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.6]{images/procesoActualBitmap}
+  \caption{\em Mapa de bits de 10px x 10px}
+\end{figure}
+
+Luego deben modificar un \emph{script} de \emph{Matlab}, el cual tiene múltiples versiones según el tipo de estructura cristalina que se quiera diseñar, de tal forma de ingresar los parámetros físicos del objeto. Algunas de las opciones que se deben configurar antes de iniciar la ejecución son:
+
+\begin{description}
+	\item [Número de capas] \hfill \\
+		Cuantas veces se repite la primera capa para formar un objeto en 3D.
+	\item [Coeficiente de escalamiento] \hfill \\
+		Es un coeficiente usado para dar al objeto las medidas deseadas para ejecutar la simulación.
+	\item [Constante de red] \hfill \\
+		Esta es la dimensión de la arista de una celda unitaria
+\end{description}
+
+Todos estos parámetros deben ser modificados directamente en el código, en distintas partes de este, por lo que es muy fácil cometer errores, los que por supuesto invalidan cualquier simulación hecha en base a estos.
+
+Una vez configurado el script debe ser ejecutado, este leerá el mapa de bits ingresado como parámetro analizando cada uno de los pixeles, creando un arreglo binario de 2 dimensiones, donde un pixel negro es representado por 1 y un pixel blanco es representado por un 0, lo que creará la primera capa de partículas; luego, según las configuraciones ingresadas, generará el resto de partículas buscadas y sus vecindades, provocando como salida un archivo con las posiciones de los átomos y sus vecinos, además de dos imágenes que representan las distintas partículas generadas en base a los archivos de entrada, estas imágenes no son lo suficientemente claras como para poder identificar errores en el diseño esperado, por lo que la posibilidad de equivocarse y simular con una premisa inválida es algo mucho más común que lo esperado.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.6]{images/procesoActualMatlab1}
+  \caption{\em Vista 3D de los átomos encontrados}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=.6]{images/procesoActualMatlab2}
+  \caption{\em Vista 2D de la primera capa de átomos}
+\end{figure}
+
+Una vez decidido que el objeto diseñado se usará para una simulación es necesario ejecutar un nuevo software, escrito en C, que se encargará de modificar el archivo de salida del script de \emph{Matlab} de tal forma de que pueda ser usado como entrada para la simulación Monte Carlo. Cabe notar que este software está compilado y no se cuentan con el código de fuente de este, de tal forma que si en algún momento se necesitara modificar el formato de la entrada de la simulación este software se debería re-escribir.
+
+\begin{center}
+	\begin{lstlisting}
+		5.4700000e+02   1.4000000e-01   1.5400000e+00   1.2600000e+00   4.0000000e+00   4.8300000e+02   4.8400000e+02   4.8700000e+02   4.8800000e+02   0.0000000e+00   0.0000000e+00   0.0000000e+00   0.0000000e+00
+	\end{lstlisting}
+	\em Formato de salida generado por el script de matlab
+\end{center}
+
+\begin{center}
+	\begin{lstlisting}
+		547   0.14   1.54   1.26   4   483   484   487   488   0   0   0   0
+	\end{lstlisting}
+	\em Formato de entrada necesario para la simulación
+\end{center}
+
+Además de modificar el formato de todas las líneas del archivo generado este software agrega una línea en el inicio del archivo que contiene distintos parámetros usados por el software de simulación, como el número de partículas y la constante de escalamiento.
+
+\subsection{Visualización de resultados}
+
+Si bien el proceso de diseño de objetos es precario este no se compara con el de visualización y exportación de resultados, tanto en forma de imágenes como videos. Dentro de las limitaciones que tienen es la imposibilidad de generar videos con colores que permitan distinguir una tercera dimensión no clara al ser una representación en 2D.
+
+Actualmente se usa la funcionalidad \emph{Quiver plot} de matlab, que permite dibujar rápidamente vectores en base a archivos de entrada con cierto formato, no obstante este proceso requiere de tiempo para obtener representaciones que realmente reflejen lo deseado, siendo un proceso de ensayo y error que gasta tiempo de manera innecesaria para los científicos.
+
+
+% Actualmente los investigadores deben preparar la simulación usando un \emph{script} en Matlab\textregistered, el cual analiza un archivo \emph{.bmp} creado en \emph{Microsoft Paint\textregistered}, esta imagen generalmente es pequeña, menor a 50px x 50px, y representa la primera capa del objeto (mirado desde arriba), para esto se marcan los pixeles que describen el objeto, de esta forma el mapa de \emph{bits} es binario, si un \emph{pixel} es negro se considera un 1, si es blanco se considera un 0. En este \emph{script} se describen características específicas del objeto que se quiere definir, entre ellos:
+% \begin{itemize}
+% 	\item Número de capas: Cuantas veces se repite la primera capa para formar un objeto en 3D.
+% 	\item Distribución de los átomos (ver anexo A): Como premisa se trabaja sólo con distribuciones cúbicas de átomos, no obstante estas distribuciones tienen ciertas características específicas, por ejemplo:
+% 	\begin{itemize}
+% 		\item Cúbico simple (SC por \emph{Simple Cubic}): En cada vértice de una distribución cúbica se encuentra un átomo.
+% 		\item Centrado en las caras (FCC por \emph{Face-centered Cubic}): Además del átomo en cada vértice de la distribución cúbica, hay un átomo en el centro de cada cara de la distribución.
+% 		\item Centrado (BCC por \emph{Body-centered Cubic}):  Además del átomo en cada vértice de la distribución cúbica, hay un átomo en el centro de cada distribución.
+% 	\end{itemize}
+% 	\item Coeficiente de escalamiento: Es un coeficiente usado para dar al objeto las medidas deseadas para ejecutar la simulación.
+% \end{itemize}
+
+% Este proceso produce un archivo de texto plano describiendo cada uno de los átomos del objeto sobre el cuál se aplicará la simulación.
+
+% Luego de ejecutada la simulación el software entrega múltiples archivos de texto, uno que define cada uno de los átomos con un ID y una posición en el espacio, y N archivos que definen la fuerza magnética de cada átomo en un tiempo dado. Los científicos deben seleccionar uno de estos archivos y aplicar un \emph{script} de Matlab\textregistered\ para poder visualizar el resultado.
+
+% El proceso de exportación de imágenes para publicaciones puede tomar un día de trabajo para los científicos, ya que deben hacer ``ensayo y error'' hasta que la imagen producida refleje lo que desean. Luego deben esperar por la aprobación por parte del profesor guía, en caso de ser rechazada, deben volver a ejecutar el proceso.
+
+% \subsection{Soluciones similares}
+% Existe una herramienta que hace simulaciones similares a las que hace el grupo de científicos llamada ``Go Parallel Magnet\textregistered''. A pesar de que la simulación no es exactamente la misma, el flujo de diseño es útil para el proyecto. Sin ir más lejos los científicos basan el proceso actual en éste.
+
+% ``Go Parallel Magnet\textregistered'' usa para el diseño un sistema de multi-capas, donde se define la capa superior del objeto y se indica la cantidad de veces que ésta se repetirá. Con estos datos se crea un objeto en 3D que luego se transforma en la estructura molecular deseada.
 
 \section{Propósitos de la solución}
 \begin{enumerate}

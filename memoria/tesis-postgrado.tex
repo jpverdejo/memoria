@@ -1,0 +1,80 @@
+\documentclass[logo,ejecucion]{tesis-postgrado}
+% * <laiglesiaesunnegocio@gmail.com> 2015-02-19T18:34:16.944Z:
+%
+%
+%
+% opciones: logo,dosguias,magister,doctorado,propuesta,txfonts
+
+%\keywords{Desktop Grid; Javascript; Node.js; Volunteer Computing}
+
+\begin{document}
+\baselineskip 23pt
+
+\frontmatter %Utiliza numeración romana
+
+% ----------------------------------------------------------
+% ----------- PARTE INICIAL --------------------------------
+\thispagestyle{empty}
+\include{preliminares/cubierta}
+
+\paginaenblanco
+
+
+% ----------------------------------------------------------
+% ----------- PRIMERA PARTE --------------------------------
+% ### Resumen e Indices ####
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt} %Hace que no aparezca la linea horizontal superior al principio de estas páginas
+\fancyhead[L]{}
+\fancyhead[C]{}
+\fancyhead[R]{}
+
+
+\makecopyright % si es propuesta no se mostrará
+% \include{preliminares/dedicatoria}
+% \include{preliminares/agradecimiento}
+
+
+\pagestyle{fancy}
+%\fancyhead[L]{\slshape \leftmark}
+
+
+\tableofcontents        %% Indice general
+\listoftables           %% Indice de tablas
+\listoffigures          %% Indice de figuras
+%\listofalgorithms       %% Indice de algoritmos
+
+\include{preliminares/abstract}
+
+
+% ----------------------------------------------------------
+% ----------- SEGUNDA PARTE --------------------------------
+\mainmatter %Reinicia el contador de páginas para partir de 1 y usando números arábicos.
+% ### Configuración del header ###
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.4pt} %Hace que vuelva a aparecer la linea horizontal
+\fancyhead[LE,RO]{\slshape \leftmark} %Hace que se muestre el título del capítulo en las páginas que no son la primera de cada capítulo
+%Comentar la linea anterior y descomentar la siguiente si se usa oneside:
+%\fancyhead[L]{\slshape \leftmark}
+
+% ### Capitulos de la tesis ###
+\include{chapters/1-introduccion}
+\include{chapters/2-dominio}
+\include{chapters/3-arquitectura}
+
+% ----------------------------------------------------------
+% ----------- TERCERA PARTE --------------------------------
+% \backmatter %Elimina la numeración
+% ### Bibliografía de este documento ###
+\bibliographystyle{apa-good}
+\bibliography{referencias}
+% ----------------------------------------------------------
+% ----------- CUARTA PARTE ---------------------------------
+\appendix
+\addappheadtotoc %agregar Apéndice al índice. Si no tiene apéndices COMENTAR o BORRAR
+% \noappendicestocpagenum %quitar número de páginas a los apéndices
+% ### ANEXOS ###
+% \include{apendices/Apendice-1} % Manuales de Usuario
+%\include{apendices/Apendice-2} % Otro anexo
+\end{document}
+%\\end
