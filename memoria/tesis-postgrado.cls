@@ -78,6 +78,7 @@
 \RequirePackage{mathcomp}
 \RequirePackage{marvosym} %Simbolos de caritas
 \RequirePackage{upgreek}
+\RequirePackage{units}
 \iftxfonts\RequirePackage{txfonts}\fi
 %-------Entornos, figuras
 \RequirePackage{verbatim}
@@ -127,7 +128,7 @@
 \RequirePackage{thesis_em}
 %--------Listing de código
 \RequirePackage{listings} % For insert code in the paper
-\lstset{ 
+\lstset{
 %    language=[Visual]C++,
     frame=Ltb,
     framerule=0pt,

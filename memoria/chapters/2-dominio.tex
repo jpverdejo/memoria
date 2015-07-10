@@ -2,56 +2,58 @@
 \label{cap:dominio}
 
 \section{Problema}
-Alumnos de doctorado del Departamento de Física de la Universidad de Santiago de Chile se encuentran estudiando los efectos de aplicar ciertos campos magnéticos a nano-estructuras cristalinas, con propiedades físicas definidas, cuyos resultados esperan puedan ser aplicados a la producción de nuevos dispositivos magnéticos o para el grabado de datos magnético de alta densidad.
+Investigadores del Departamento de Física de la Universidad de Santiago de Chile pertenecientes al CEDENNA se encuentran estudiando los efectos de aplicar ciertos campos magnéticos a nano-estructuras cristalinas, con propiedades físicas definidas. Los resultados de estas simulaciones pueden ser aplicados a la producción de nuevos dispositivos magnéticos o para el grabado de datos magnético de alta densidad  \citep{asymmetricMagneticDots}.
 
 \section{Estructuras cristalinas}
-Las nano-estructuras estudiadas son de tipo cristalinas, las que pueden ser divididas en celdas unitarias de distintos tipos  según la distribución de sus partículas. Las 3 estructuras más usadas son el cubo simple (\emph{SC} o \emph{Simple Cubic}), cubo centrado en su cuerpo (\emph{BCC} o \emph{Body-centered Cubic}) y cubo centrado en sus caras (\emph{FCC} o \emph{Face-centered cubic}).
+Las nano-estructuras estudiadas son de tipo cristalinas, las que pueden ser divididas en celdas unitarias de distintos tipos  según la distribución de sus átomos. Las 3 estructuras más usadas son el cubo simple (\emph{SC} o \emph{Simple Cubic}), cubo centrado en su cuerpo (\emph{BCC} o \emph{Body-centered Cubic}) y cubo centrado en sus caras (\emph{FCC} o \emph{Face-centered cubic}) \citep{ITC213}.
 
-En las estructuras cristalinas la dimensión física de las aristas está dada por el parámetro llamado \emph{Lattice Parameter} o Parámetro de Red, como en este caso solo se trabajará con estructuras cúbicas las aristas tendrán todas la misma dimensión, por lo que nos referiremos a este parámetro como \emph{Lattice Constant} o Constante de Red.
+En las estructuras cristalinas la dimensión física de las aristas está dada por el parámetro llamado \emph{Lattice Parameter} o Parámetro de Red. Como en este caso solo se trabajará con estructuras cúbicas todas las aristas tendrán la misma dimensión, por lo que nos referiremos a este parámetro como \emph{Lattice Constant} o Constante de Red.
 
-Para cada átomo de una estructura cristalina se puede identificar un conjunto de átomos que compondrán la vecindad, es decir, son las partículas que están a menor distancia de este. Dependiendo del tipo de celdas unitarias se define el algoritmo para encontrarlos y se identifica el número máximo de partículas que pueden ser encontradas.
+Para cada átomo de una estructura cristalina se puede identificar un conjunto de átomos que componen la vecindad, es decir, son los átomos que están a menor distancia de este. Dependiendo del tipo de celdas unitarias se define un algoritmo para encontrar los vecinos e identificar el número máximo de vecinos que pueden ser encontrados.
 
-Dependiendo del tipo de estructura se pueden encontrar patrones de periodicidad entre ellas, es decir, que cada cierto número de capas se repita la misma distribución de átomos.
+Dependiendo del tipo de estructura se puede encontrar patrones de periodicidad entre ellas, es decir, que cada cierto número de capas se repita la misma distribución de átomos.
 
 \subsection{Cubo simple (SC)}
-Esta es la estructura cristalina más simple, donde en cada vértice podemos encontrar una partícula, debido a esto la distancia entre dos átomos vecinos es siempre la constante de red. Como en cada vértice de la estructura se unen 8 celdas unitarias, cada cubo tiene $1/8$ de partícula, luego cada celda tiene $1/8 \cdot 8 = 1$ átomo en total.
+Esta es la estructura cristalina más simple, donde en cada vértice podemos encontrar una partícula. Luego la distancia entre dos átomos vecinos es siempre la constante de red (ver figura \ref{SimpleCubic}). Como en cada vértice de la estructura se unen 8 celdas unitarias, cada cubo tiene $1/8$ de partícula, luego cada celda tiene $1/8 \cdot 8 = 1$ átomo en total.
 
 En el caso del cubo simple la vecindad de cada átomo está compuesta a lo más por otros 6 átomos, los que están en dirección a cada una de las aristas que componen el vértice donde se encuentra la partícula.
 
 El cubo simple tiene una periodicidad de 1, es decir, todas las capas tienen la misma distribución de átomos.
 
-\begin{figure}[H]
+\begin{figure}[ht]
   \centering
   \includegraphics[scale=.6]{images/SimpleCubic}
-  \caption{\em Cubo simple}
+  \caption{\em Cubo simple, con constante de red $a$}
+  \label{SimpleCubic}
 \end{figure}
 
 
 \subsection{Cubo centrado en su cuerpo (BCC)}
-Una estructura cristalina de cubos centrados en su cuerpo se caracteriza porque en cada una de sus celdas unitarias se puede encontrar, además de los átomos en sus vértices, un átomo en su centro, de esta forma cada una de sus celdas tiene $1/8$ de átomo en cada uno de sus vértices más uno en su centro, por lo que tiene $1/8 \cdot 8 + 1 = 2$ átomos en total.
+Una estructura cristalina de cubos centrados en su cuerpo se caracteriza porque en cada una de sus celdas unitarias se puede encontrar, además de los átomos en sus vértices, un átomo en su centro (ver figura \ref{BodyCenteredCubic}). De esta forma cada una de sus celdas tiene $1/8$ de átomo en cada uno de sus vértices, más un átomo en su centro, resultando en $1/8 \cdot 8 + 1 = 2$ átomos en total.
 
-A diferencia de un cubo simple, la vecindad de un átomo está compuesta por:
+A diferencia de un cubo simple, la vecindad de un átomo en BCC está compuesta por:
 
 \begin{itemize}
-  \item Las partículas centrales de cada uno de los cubos que componen un vértice, para el caso de un átomo ubicado en ese punto
-  \item Las partículas ubicadas en cada uno de los vértices, para el caso de un átomo ubicado en el centro de una celda unitaria
+  \item Para el caso de un átomo ubicado en un vértice, las partículas centrales de cada uno de los cubos que componen dicho vértice.
+  \item Para el caso de un átomo ubicado en el centro de una celda unitaria, las partículas ubicadas en cada uno de los vértices de dicha celda.
 \end{itemize}
 
 En ambos casos el número máximo de partículas en una vecindad es de 8.
 
 La periodicidad de capas de una estructura compuesta por cubos centrados en su cuerpo es de 2, es decir, cada 2 capas se repetirá la distribución de átomos.
 
-\begin{figure}[H]
+\begin{figure}[ht]
   \centering
   \includegraphics[scale=.6]{images/BodyCenteredCubic}
-  \caption{\em Cubo centrado en su cuerpo}
+  \caption{\em Cubo centrado en su cuerpo, con constante de red $a$}
+  \label{BodyCenteredCubic}
 \end{figure}
 
 
 \subsection{Cubo centrado en sus caras (FCC)}
-En el caso de las estructuras cristalinas compuesta por cubos centrados en sus caras se pueden distinguir átomos en cada uno de sus vértices y átomos en cada una de las caras de cada cubo. Como el átomo de una caras es compartido por 2 cubos, cada uno de ellos contiene $1/2$ de este, por lo tanto cada celda unitaria contiene $1/8 \cdot 8 + 1/2 \cdot 6 = 4$ átomos en total.
+En el caso de las estructuras cristalinas compuesta por cubos centrados en sus caras se puede distinguir átomos en cada uno de sus vértices y átomos en cada una de las caras de cada cubo (ver figura \ref{FaceCenteredCubic}). Como el átomo de una cara es compartido por 2 cubos, cada uno de ellos contiene $1/2$ de éste, y por lo tanto cada celda unitaria contiene $1/8 \cdot 8 + 1/2 \cdot 6 = 4$ átomos en total.
 
-Para la identificación de la vecindad se usa la siguiente regla:
+La vecindad de un átomo FCC está compuesta por:
 
 \begin{itemize}
   \item Las partículas de cada cara que esté compuesta por una de las aristas que conforman el vértice, para el caso de un átomo ubicado en ese punto
@@ -60,33 +62,46 @@ Para la identificación de la vecindad se usa la siguiente regla:
 
 De las reglas anteriores se puede inferir que el tamaño máximo de una vecindad es de 12 átomos.
 
-Para las estructuras formadas por cubos centrados en sus caras se identifica una periodicidad de 2, es decir, al igual que en el caso de los cubos centrados en su cuerpo, cada 2 capas se repite a distribución atómica.
+Para las estructuras formadas por cubos centrados en sus caras se identifica una periodicidad de 2, es decir, al igual que en el caso de los cubos centrados en su cuerpo, cada 2 capas se repite la distribución atómica.
 
-\begin{figure}[H]
+\begin{figure}[ht]
   \centering
   \includegraphics[scale=.6]{images/FaceCenteredCubic}
   \caption{\em Cubo centrado en sus caras}
+  \label{FaceCenteredCubic}
 \end{figure}
 
 \section{Escalamiento}
 
-A pesar de la gran capacidad de procesamiento de los computadores actuales aún resulta inconveniente simular los sistemas con sus características reales, debido a la gran cantidad de átomos que deberían ser simulados. Para esto los científicos deben primero escalar el sistema, usando un sistema propuesto en \emph{Scaling relations for magnetic nanoparticles} \citep{PhysRevB.71.094435} donde analizaron un diagrama de fase magnético para un cilindro con ciertas características materiales y físicas, en función de su diámetro y altura, con esto notaron que el diagrama $J' = J \cdot X$, con la constante de escalamiento $X < 1$ se puede obtener modificando las dimenssones del cilindro en base a la siguiente relación:
+A pesar de la gran capacidad de procesamiento de los computadores actuales aún resulta inconveniente simular los sistemas con sus características reales, debido a la gran cantidad de átomos que deberían ser simulados. Para esto los científicos han propuesto un método de escalamiento de las configuraciones que les permita reducir significativamente el número de átomos y obtener soluciones válidas \citep{PhysRevB.71.094435}. El método fue validado mediante un diagrama de fase magnético para un cilindro con ciertas características materiales y físicas, en función de su diámetro y altura. En este diagrama notaron que un diagrama modificado (o escalado) $J' = J \cdot X$, con la constante de escalamiento $X < 1$ se puede obtener modificando las dimensiones del cilindro en base a la siguiente relación:
 
 \begin{center}
-$Longitud' = Longitud \cdot X ^ \eta $, con $\eta = 0.55$
+$Longitud' = Longitud \cdot X ^ \eta$ , con $\eta = 0.55$
 \end{center}
 
-Con esta relación de escalamiento las relaciones magnéticas entre los átomos se mantienen intactas.
+\noindent
+donde Longitud puede ser cualquiera de las 3 dimensiones, alto, ancho o profundidad.
 
-En el caso de la solución creada en esta memoria se recibe como entrada de parte del usuario el tamaño original del objeto a simular, la cantidad de celdas unitarias que componen el objeto escalado, la constante de red y la constante $\eta$, de tal forma que la constante de escalamiento $X$ se obtiene mediante:
+Con esta relación de escalamiento las relaciones magnéticas entre los átomos se mantienen intactas, y las simulaciones entregan resultados válidos.
+
+EL diseño de configuraciones escaladas en base a las dimensiones reales se realiza de la siguiente dorma. Dada la constante de red, el tipo de estructura cristalina y el número de capas deseado, se calcula la altura escalada del objeto mediante:
 
 \begin{center}
-$$X = \sqrt[\eta](Altura' / Altura)$$
-
-$$Altura' = \dfrac{Capas * Constante\ de\ Red}{Periodicidad\ de\ la\ estructura\ cristalina}$$
+    $$Altura' = \dfrac{Capas * Constante\ de\ Red}{Periodicidad\ de\ la\ estructura\ cristalina}$$
 \end{center}
 
-\clearpage
+Luego, y conociendo la altura real, se calcula la constante de escalamiento con la siguiente ecuación:
+
+\begin{center}
+$X = \bigg( \dfrac{Altura'}{Altura} \bigg)^{\nicefrac{1}{\eta}}$
+\end{center}
+
+Finalmente, las otras dos dimensiones escaladas pueden obtenerse mediante:
+
+\begin{center}
+$$Ancho' = X^\eta \cdot Ancho$$
+$$Profundidad' = X^\eta \cdot Profundidad$$
+\end{center}
 
 \section{Método Monte Carlo}
 
