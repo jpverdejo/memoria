@@ -14,6 +14,7 @@ Para cada átomo de una estructura cristalina se puede identificar un conjunto d
 Dependiendo del tipo de estructura se puede encontrar patrones de periodicidad entre ellas, es decir, que cada cierto número de capas se repita la misma distribución de átomos.
 
 \subsection{Cubo simple (SC)}
+\label{structureSC}
 Esta es la estructura cristalina más simple, donde en cada vértice podemos encontrar una partícula. Luego la distancia entre dos átomos vecinos es siempre la constante de red (ver figura \ref{SimpleCubic}). Como en cada vértice de la estructura se unen 8 celdas unitarias, cada cubo tiene $1/8$ de partícula, luego cada celda tiene $1/8 \cdot 8 = 1$ átomo en total.
 
 En el caso del cubo simple la vecindad de cada átomo está compuesta a lo más por otros 6 átomos, los que están en dirección a cada una de las aristas que componen el vértice donde se encuentra la partícula.
@@ -29,6 +30,7 @@ El cubo simple tiene una periodicidad de 1, es decir, todas las capas tienen la 
 
 
 \subsection{Cubo centrado en su cuerpo (BCC)}
+\label{structureBCC}
 Una estructura cristalina de cubos centrados en su cuerpo se caracteriza porque en cada una de sus celdas unitarias se puede encontrar, además de los átomos en sus vértices, un átomo en su centro (ver figura \ref{BodyCenteredCubic}). De esta forma cada una de sus celdas tiene $1/8$ de átomo en cada uno de sus vértices, más un átomo en su centro, resultando en $1/8 \cdot 8 + 1 = 2$ átomos en total.
 
 A diferencia de un cubo simple, la vecindad de un átomo en BCC está compuesta por:
@@ -51,6 +53,7 @@ La periodicidad de capas de una estructura compuesta por cubos centrados en su c
 
 
 \subsection{Cubo centrado en sus caras (FCC)}
+\label{structureFCC}
 En el caso de las estructuras cristalinas compuesta por cubos centrados en sus caras se puede distinguir átomos en cada uno de sus vértices y átomos en cada una de las caras de cada cubo (ver figura \ref{FaceCenteredCubic}). Como el átomo de una cara es compartido por 2 cubos, cada uno de ellos contiene $1/2$ de éste, y por lo tanto cada celda unitaria contiene $1/8 \cdot 8 + 1/2 \cdot 6 = 4$ átomos en total.
 
 La vecindad de un átomo FCC está compuesta por:
@@ -73,7 +76,7 @@ Para las estructuras formadas por cubos centrados en sus caras se identifica una
 
 \section{Escalamiento}
 
-A pesar de la gran capacidad de procesamiento de los computadores actuales aún resulta inconveniente simular los sistemas con sus características reales, debido a la gran cantidad de átomos que deberían ser simulados. Para esto los científicos han propuesto un método de escalamiento de las configuraciones que les permita reducir significativamente el número de átomos y obtener soluciones válidas \citep{PhysRevB.71.094435}. El método fue validado mediante un diagrama de fase magnético para un cilindro con ciertas características materiales y físicas, en función de su diámetro y altura. En este diagrama notaron que un diagrama modificado (o escalado) $J' = J \cdot X$, con la constante de escalamiento $X < 1$ se puede obtener modificando las dimensiones del cilindro en base a la siguiente relación:
+A pesar de la gran capacidad de procesamiento de los computadores actuales aún resulta inconveniente simular los sistemas con sus características reales, debido a la gran cantidad de átomos que deberían ser simulados, que dependiendo del objeto pueden ser de orden de magnitud $10^8$. Para esto los científicos han propuesto un método de escalamiento de las configuraciones que les permita reducir significativamente el número de átomos y obtener soluciones válidas \citep{PhysRevB.71.094435}. El método fue validado mediante un diagrama de fase magnético para un cilindro con ciertas características materiales y físicas, en función de su diámetro y altura. En este diagrama notaron que un diagrama modificado (o escalado) $J' = J \cdot X$, con la constante de escalamiento $X < 1$ se puede obtener modificando las dimensiones del cilindro en base a la siguiente relación:
 
 \begin{center}
 $Longitud' = Longitud \cdot X ^ \eta$ , con $\eta = 0.55$
@@ -115,7 +118,7 @@ Para esta investigación los científicos aplicarán el Método Monte Carlo usan
 
 \begin{itemize}
  \item Se selecciona una partícula $i$ al azar y se calcula su energía $E_1 = E(\vec{m}_i)$
- \item Se modifica la dirección del momento magnético de la partícula $i$ al azar y se calcula la nueva energía $E_2 = E(\vec{m}'_i)$
+ \item Se modifica la dirección del vector de magnetización de la partícula $i$ al azar y se calcula la nueva energía $E_2 = E(\vec{m}'_i)$
  \item Se considera válido el cambio de $\vec{m}_i$ a $\vec{m}'_i$ si se cumple alguna de las siguientes condiciones
  \begin{itemize}
   \item $E_2$ es menor que $E_1$
@@ -151,6 +154,6 @@ donde $E_{ij}$ es la energía dipolar dada por
 \end{center}
 
 \noindent
-con $r_{ij}$ la distancia entre los momentos magnéticos $\vec{\mu}_i$  y $\vec{\mu}_j$ y $\hat{n}_{ij}$ el vector unitario en la dirección que conecta los dos momentos magnéticos. $\hat{\mu}_i$ es un vector unitario en la dirección de $\vec{\mu}_i$ y $E_H = - \sum_i \vec{\mu}_i \cdot \vec{H}$ representa la energía Zeeman para un campo $\vec{H}$ aplicado hacia el eje x.
+con $r_{ij}$ la distancia entre los vectores de magnetización $\vec{\mu}_i$  y $\vec{\mu}_j$ y $\hat{n}_{ij}$ el vector unitario en la dirección que conecta los dos vectores de magnetización. $\hat{\mu}_i$ es un vector unitario en la dirección de $\vec{\mu}_i$ y $E_H = - \sum_i \vec{\mu}_i \cdot \vec{H}$ representa la energía Zeeman para un campo $\vec{H}$ aplicado hacia el eje x.
 
 $J_{ij}$ es la interacción de canje magnético entre $i$ y $j$, es decir, como sus campos magnéticos internos se afectan entre ellos, para este caso se asumirá que $J_{ij} = 0$ para dos átomos que no son vecinos. Como en el caso de dos partículas vecinas es necesario calcular esta interacción, al momento de ejecutar la simulación es necesario saber, para cada átomo, quienes componen su vecindad.

@@ -30,10 +30,11 @@
 \renewcommand{\sfdefault}{phv} % Arial
 
 %Load book using normal font size to 10pt
-\LoadClass[10pt,twoside,letterpaper]{book} %Cambiar oneside o twoside si se desea impresión por ambos lados
+\LoadClass[10pt,oneside,letterpaper]{book} %Cambiar oneside o twoside si se desea impresión por ambos lados
 
 %% Cambio el interlineado a 1.5:
-\renewcommand{\baselinestretch}{1.5}
+\linespread{1.5}
+%\renewcommand{\baselinestretch}{1.5}
 
 %%Hago que la mancha de página deje todo alineado hacia arriba
 \raggedbottom
@@ -90,8 +91,8 @@
 \RequirePackage{psfrag}
 \RequirePackage{epic,eepic} % para imagenes
 %\RequirePackage{subfigure}
-\usepackage{subfig}
-\usepackage[titles,subfigure]{tocloft}
+%\usepackage{subfig}
+%\usepackage[titles,subfigure]{tocloft}
 \usepackage{color}
 %\RequirePackage{color}
 %-------Referencias
@@ -103,6 +104,9 @@
 \RequirePackage{multirow} % Multiples filas en Tablas
 \RequirePackage{array}
 \RequirePackage{caption}
+\usepackage[font=small]{caption}
+\RequirePackage{subcaption}
+\usepackage{subcaption}
 \captionsetup[table]{position=top,belowskip=4pt,aboveskip=4pt}
 \RequirePackage{longtable} % Para cortar tablas grandes
 \RequirePackage{lscape}
@@ -128,7 +132,7 @@
 \RequirePackage{thesis_em}
 %--------Listing de código
 \RequirePackage{listings} % For insert code in the paper
-\lstset{
+\lstset{ 
 %    language=[Visual]C++,
     frame=Ltb,
     framerule=0pt,
@@ -286,9 +290,8 @@
 \else
     \fancyfoot[R]{\thepage} 
 \fi
-%Si se usa oneside, comentar la linea anterior y descomentar la siguiente linea:
-%\fancyfoot[R]{\thepage} 
-%BORRAR LAS 2 LINEAS ANTERIORES
+
+
 \cfoot{}
 
 %Hace que la primera página de cada capítulo no tenga el header por defecto y que en el footer el N° de página no esté al centro
@@ -311,22 +314,22 @@
 % Renombre de los titulos por defecto
 \addto\captionsspanish
 {
-    \def\bibname{Referencias}
+    \def\bibname{Bibliografía}
     \def\contentsname{Tabla de Contenido}
     \def\listtablename{Índice de Tablas}
-    \def\listfigurename{Índice de Figuras}
+    \def\listfigurename{Índice de Ilustraciones}
     \def\listalgorithmname{Índice de Algoritmos}
-    \def\appendixname{Anexo}
-    \def\tablename{TABLA}
-    \def\figurename{FIGURA}
-    \def\lstlistingname{CÓDIGO}
+    \def\appendixname{Apéndice}
+    \def\tablename{Tabla}
+    \def\figurename{Figura}
+    \def\lstlistingname{Código}
     \def\chaptername{Capítulo}
 }
 
 
-\renewcommand{\appendixname}{Anexos}
-\renewcommand{\appendixtocname}{Anexos}
-\renewcommand{\appendixpagename}{Anexos}
+\renewcommand{\appendixname}{Apéndices}
+\renewcommand{\appendixtocname}{Apéndices}
+\renewcommand{\appendixpagename}{Apéndices}
 %--------Header de los capitulos
 % by Emir
 \usepackage[compact]{titlesec}
@@ -372,9 +375,14 @@
 %Lo mismo para el índice de tablas
 \renewcommand{\cfttabfont}{Tabla }
 
+%Se cambia el tamaño del título de la lista de figuras, tablas e índice de contenido dejándolos igual que los títulos normales
+\renewcommand\cftloftitlefont{\Large\bf}
+\renewcommand\cftlottitlefont{\Large\bf}
+\renewcommand\cfttoctitlefont{\Large\bf}
+
 
 %--------Margenes segun reglamento: izq=4cm y inf=der=sup=2.5cm
-\RequirePackage[headheight=14pt, letterpaper]{geometry}
+\RequirePackage[headheight=25.1pt, letterpaper]{geometry}
 % Márgenes en los bordes para tamaño carta
 \geometry{top=2.5cm, bottom=2.5cm, left=4cm, right=2.5cm}
 %--------Otros margenes
@@ -486,20 +494,20 @@
 \newcommand{\makecubierta}
 {
 \iflogo
-    \vspace*{-1.0cm}
+    \vspace*{1.5cm} %-1.0cm
     \begin{picture}(18,4)(0,40)
-        \put(340,-7){\includegraphics[scale=.25]{./images/LogoUsach2.png}}
+        \put(300,-7){\includegraphics[scale=.25]{./images/LogoUsach2.png}}
     \end{picture}
 \fi
 
 \sloppy
 \thispagestyle{empty}
-\vspace*{-1.5cm}
+\vspace*{-1.8cm} %-1.5cm
 
 \begin{center}
-    {\bf \fontsize{14}{21}\selectfont UNIVERSIDAD DE SANTIAGO DE CHILE}\\
-    {\bf \fontsize{12}{18}\selectfont FACULTAD DE INGENIERÍA}\\
-    {\bf \fontsize{12}{18}\selectfont Departamento de Ingeniería Informática}\\
+    {\hspace*{-0.5cm}\textbf{\fontsize{14}{16.8}\selectfont UNIVERSIDAD DE SANTIAGO DE CHILE}}\\
+    {\hspace*{-0.5cm}\textbf{\fontsize{12}{14.4}\selectfont FACULTAD DE INGENIERÍA}}\\
+    {\hspace*{-0.5cm}\textbf{\fontsize{12}{14.4}\selectfont Departamento de Ingeniería Informática}}\\
 \end{center}
 
 \ifpropuesta % si se trata de la propuesta
@@ -510,9 +518,6 @@
     \large
     \ifdoctorado
         Propuesta de Trabajo de Título para Doctor en Ingeniería Informática
-    \fi
-    \ifejecucion
-        Propuesta de Trabajo de T\'itulo para Ingeniero de Ejecuci\'on en \\Computaci\'on e Inform\'atica
     \fi
     \ifmagister
         Propuesta de Trabajo de Título para Magíster en Ingeniería Informática
@@ -542,31 +547,33 @@
         \@diasemana, \@diaexamen\ de \@mesexamen\ de \@annoexamen
     \end{center}
 \else % si se trata del documento final
-    \vspace*{4cm}
+    \vspace*{3.0cm} %cambiar esto si la portada se extiende y usa dos páginas
     \@titleMay\par
     \vspace{1cm}
     \large
         \begin{center}
         \vspace*{2cm}
         \iflogo
-            {\bf \fontsize{10}{12} \selectfont{\@autor}}\\[1cm]
+            {\textbf{\fontsize{10}{12} \selectfont{\@autor}}}\\[1cm]
         \else
-            {\bf \fontsize{10}{12} \selectfont{\@autor}}\\[1.5cm]
+            {\textbf{\fontsize{10}{12} \selectfont{\@autor}}}\\[1.5cm]
         \fi
 
         %Datos profesor(es)
-        \vspace*{3cm}
+        \vspace*{2cm}
         \begin{flushleft}
         \normalsize
-        \hspace{7cm} Profesor guía: \fontsize{10}{12} \selectfont {\@profesorguia}\\
+        \begin{flushright}
+          Profesor guía: \fontsize{10}{12} \selectfont {\@profesorguia}\\
+        \end{flushright}
         \ifdosguias
             \hspace{7cm} Profesor co-guía: \fontsize{10}{12} \selectfont{\@profesorcoguia}\\
         \fi
         \vspace{1cm}
-        \hspace{7cm} Trabajo de titulación presentado\\
-        \hspace{7cm} en conformidad a los requisitos para\\
-        \hspace{7cm} obtener el t\'itulo de Ingeniero de\\
-        \hspace{7cm} Ejecuci\'on en Computaci\'on e Inform\'atica\\
+        \hspace{8.6cm} Trabajo de titulación presentado\\
+        \hspace{8.6cm} en conformidad a los requisitos para\\
+        \hspace{8.6cm} obtener el t\'itulo de Ingeniero de\\
+        \hspace{8.6cm} Ejecuci\'on en Computaci\'on e Inform\'atica\\
         \end{flushleft}
 
         %\vspace*{3.5cm}
@@ -612,6 +619,9 @@
 \newenvironment{dedicatoria}[1]
 {
     %\thispagestyle{empty}
+    \chapter*{\centerline{Dedicatoria}}
+    \addcontentsline{toc}{chapter}{Dedicatoria}
+    
     \vspace*{18cm}\par
     \hspace*{5cm}
     \begin{flushright}
@@ -622,9 +632,11 @@
 \newenvironment{agradecimiento}
 {
     %\thispagestyle{empty}
-    \begin{center}
-        {\Large\bf AGRADECIMIENTOS}
-    \end{center}
+    \chapter*{\centerline{Agradecimientos}}
+    \addcontentsline{toc}{chapter}{Agradecimientos}
+    %\begin{center}
+    %    {\Large\bf AGRADECIMIENTOS}
+    %\end{center}
 }{}
 %------Página de resumen (castellano)
 \newcommand{\KeywordsES}[1]

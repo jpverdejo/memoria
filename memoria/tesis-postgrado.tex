@@ -29,10 +29,14 @@
 \fancyhead[C]{}
 \fancyhead[R]{}
 
+%\fontsize{10}{12} %Tamaño de fuente por defecto en 10pt
+\linespread{1.5} %interlineado de 1.5 para el documento
+\normalsize %Tamaño 10 para el cuerpo de la tesis
 
 \makecopyright % si es propuesta no se mostrará
-% \include{preliminares/dedicatoria}
-% \include{preliminares/agradecimiento}
+\include{preliminares/abstract}
+\include{preliminares/dedicatoria}
+\include{preliminares/agradecimiento}
 
 
 \pagestyle{fancy}
@@ -40,11 +44,14 @@
 
 
 \tableofcontents        %% Indice general
+\newpage
 \listoftables           %% Indice de tablas
+\newpage
 \listoffigures          %% Indice de figuras
+\newpage
 %\listofalgorithms       %% Indice de algoritmos
 
-\include{preliminares/abstract}
+
 
 % ----------------------------------------------------------
 % ----------- SEGUNDA PARTE --------------------------------
@@ -52,15 +59,22 @@
 % ### Configuración del header ###
 \pagestyle{fancy}
 \renewcommand{\headrulewidth}{0.4pt} %Hace que vuelva a aparecer la linea horizontal
-\fancyhead[LE,RO]{\slshape \leftmark} %Hace que se muestre el título del capítulo en las páginas que no son la primera de cada capítulo
+
+%\fancyhead[LE,RO]{\slshape \leftmark} %Hace que se muestre el título del capítulo en las páginas que no son la primera de cada capítulo
 %Comentar la linea anterior y descomentar la siguiente si se usa oneside:
-%\fancyhead[L]{\slshape \leftmark}
+\fancyhead[L]{\slshape \leftmark}
+
+%espacio entre parrafos en el cuerpo de: 3mm extras
+\setlength{\parskip}{3mm}
 
 % ### Capitulos de la tesis ###
 \include{chapters/1-introduccion}
 \include{chapters/2-dominio}
 \include{chapters/3-diseno}
 \include{chapters/4-implementacion}
+
+
+
 
 % ----------------------------------------------------------
 % ----------- TERCERA PARTE --------------------------------
@@ -73,8 +87,17 @@
 \appendix
 \addappheadtotoc %agregar Apéndice al índice. Si no tiene apéndices COMENTAR o BORRAR
 % \noappendicestocpagenum %quitar número de páginas a los apéndices
-% ### ANEXOS ###
-% \include{apendices/Apendice-1} % Manuales de Usuario
-% \include{apendices/Apendice-2} % Otro anexo
+% ### APENDICES ###
+%\fontsize{9}{10.8} %tamaño de letra para apendices es 9pt
+\linespread{1.0} %interlineado de 1 para los apéndices
+\small %tamaño 9 para los apéndices
+
+\include{apendices/Apendice-1} % Manuales de Usuario
+%\include{apendices/Apendice-2} % Eventos
+%\include{apendices/Apendice-3} % Clases
+%\include{apendices/Apendice-4} % Peticiones HTTP y objetos transferidos
+%\include{apendices/Apendice-5} % Uso de memoria
+%\include{apendices/Apendice-6} % Archivos de entrada
+%\include{apendices/Apendice-7} % Código fuente de ejemplo de aplicación concreta
 \end{document}
 %\\end
