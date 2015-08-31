@@ -29,6 +29,5 @@ install numpy
 	sudo apt-get install python-numpy
 install PIL
 	sudo apt-get install libjpeg-dev libfreetype6 libfreetype6-dev zlib1g-dev
-	
 install opencv
 	sudo apt-get install python-opencv

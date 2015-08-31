@@ -7,7 +7,7 @@ Usage:
 
 from setuptools import setup
 
-APP = ['MolDesigner.py']
+APP = ['LatticeDesigner.py']
 DATA_FILES = [('images', ['images/back.png','images/forward.png','images/next.png','images/pause.png','images/play.png','images/previous.png'])]
 OPTIONS = {
 	'argv_emulation': True,

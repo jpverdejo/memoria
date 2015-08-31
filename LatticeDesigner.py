@@ -9,10 +9,15 @@ import glob
 import os
 import re
 import wx.lib.plot as plot
-import cv2
 import numpy
 import time
 import gc
+import math
+
+try:
+    import cv2
+except:
+    pass
 
 from sys import platform as _platform
 
@@ -23,8 +28,8 @@ from axes import Axes
 
 # from pprint import pprint
 
-class MolDesigner(wx.Frame):
-    title = "MolDesigner"
+class LatticeDesigner(wx.Frame):
+    title = "Lattice Designer"
 
     configs = {}
 
@@ -870,6 +875,7 @@ class MolDesigner(wx.Frame):
         # set up text, axis and draw
         gc = plot.PlotGraphics([line, marker], '', '', '')
 
+        max_y = math.fabs(max_y)
         max_y += 0.5
 
         self.plotter.Draw(gc, yAxis=(-1.5,1.5), xAxis=(-max_y,max_y))
@@ -1386,6 +1392,6 @@ def is_number(s):
     return False
 
 app = wx.App(False)
-frame = MolDesigner(None)
+frame = LatticeDesigner(None)
 
 app.MainLoop()

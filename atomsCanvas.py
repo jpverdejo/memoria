@@ -68,7 +68,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
     glViewport(0, 0, size.GetWidth(), size.GetHeight())
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45.0, (size.GetWidth() + 0.0)/size.GetHeight(), 0.1, 100.0);
+    gluPerspective(60.0, (size.GetWidth() + 0.0)/size.GetHeight(), 5, 300.0);
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
@@ -278,14 +278,11 @@ class AtomsCanvas(glcanvas.GLCanvas):
       self.rotationVectorX -= self.lastmousex - self.mousex
       self.rotationVectorY -= self.lastmousey - self.mousey
 
-      wx.CallAfter(self.parent.axesD.update)
-      wx.CallAfter(self.parent.axesV.update)
-
       self.Refresh(False)
 
   def InitGL(self):
     glMatrixMode(GL_PROJECTION)
-    glFrustum(-0.5, 0.5, -0.5, 0.5, 1.0, 100.0)
+    glFrustum(-0.5, 0.5, -0.5, 0.5, 10.0, 300.0)
 
     glMatrixMode(GL_MODELVIEW)
 
@@ -316,54 +313,88 @@ class AtomsCanvas(glcanvas.GLCanvas):
 
     return color
 
-  def drawVector(self, vector):
+  def drawVector(self, vector, i):
+    if i == 3000: start = time.clock()
     length = 0.5
     color = self.getVectorColor(vector)
-
-    # perpendicular_vector = self.perpendicular_vector(vector)
-    perpendicular_vector = np.cross(vector, (0,0,1))
-    angle_radians = self.angle_between(vector, (0,0,1))
+    # if i == 3000: print "step 1: %f" % (time.clock() - start)
+    perpendicular_vector = self.cross(vector, (0,0,1))
+    # if i == 3000: print "step 2: %f" % (time.clock() - start)
+    angle_radians = self.angle(vector, (0,0,1))
+    # if i == 3000: print "step 3: %f" % (time.clock() - start)
     angle = math.degrees(angle_radians)
+    # if i == 3000: print "step 4: %f" % (time.clock() - start)
 
     vx, vy, vz = perpendicular_vector
 
-    glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
+    glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
+    # if i == 3000: print "step 4.1: %f" % (time.clock() - start)
     glRotate(-angle, vx, vy, vz)
+    # if i == 3000: print "step 4.2: %f" % (time.clock() - start)
     q = gluNewQuadric()
+    # if i == 3000: print "step 4.3: %f" % (time.clock() - start)
     gluCylinder( q , 0.15 , 0.05 , length , 30 , 30 )
+    # if i == 3000: print "step 4.4: %f" % (time.clock() - start)
     glTranslate(0,0,length)
+    # if i == 3000: print "step 4.5: %f" % (time.clock() - start)
     glutSolidCone(0.2, 0.3, 30, 30)
+    # if i == 3000: print "step 4.6: %f" % (time.clock() - start)
     glTranslate(0,0,-length)
+    # if i == 3000: print "step 4.7: %f" % (time.clock() - start)
     glRotate(angle, vx, vy, vz)
-    glMaterialfv(GL_FRONT,GL_DIFFUSE,[1, 1, 1, 1])
+    # if i == 3000: print "step 4.8: %f" % (time.clock() - start)
+    # glMaterialfv(GL_FRONT,GL_DIFFUSE,[1, 1, 1, 1])
+    # if i == 3000: print "step 5: %f" % (time.clock() - start)
 
-  # Next 2 function got from http://stackoverflow.com/a/13849249
-  def unit_vector(self, vector):
-    """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
+  def cross(self, a, b):
+    c = [a[1]*b[2] - a[2]*b[1],
+         a[2]*b[0] - a[0]*b[2],
+         a[0]*b[1] - a[1]*b[0]]
 
-  def angle_between(self, v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+    return c
 
-      >>> angle_between((1, 0, 0), (0, 1, 0))
-      1.5707963267948966
-      >>> angle_between((1, 0, 0), (1, 0, 0))
-      0.0
-      >>> angle_between((1, 0, 0), (-1, 0, 0))
-      3.141592653589793
-    """
-    v1_u = self.unit_vector(v1)
-    v2_u = self.unit_vector(v2)
-    angle = np.arccos(np.dot(v1_u, v2_u))
-    if np.isnan(angle):
-      if (v1_u == v2_u).all():
-        return 0.0
-      else:
-        return np.pi
+  def dotproduct(self, v1, v2):
+    return sum((a*b) for a, b in zip(v1, v2))
+
+  def length(self, v):
+    return math.sqrt(self.dotproduct(v, v))
+
+  def angle(self, v1, v2):
+    angle = math.pi
+    try:
+      angle = math.acos(self.dotproduct(v1, v2) / (self.length(v1) * self.length(v2)))
+    except:
+      if v1 == v2:
+        angle = 0.0
     return angle
 
+  # Next 2 function got from http://stackoverflow.com/a/13849249
+  # def unit_vector(self, vector):
+  #   """ Returns the unit vector of the vector.  """
+  #   return vector / np.linalg.norm(vector)
+
+  # def angle_between(self, v1, v2):
+  #   """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+  #     >>> angle_between((1, 0, 0), (0, 1, 0))
+  #     1.5707963267948966
+  #     >>> angle_between((1, 0, 0), (1, 0, 0))
+  #     0.0
+  #     >>> angle_between((1, 0, 0), (-1, 0, 0))
+  #     3.141592653589793
+  #   """
+  #   v1_u = self.unit_vector(v1)
+  #   v2_u = self.unit_vector(v2)
+  #   angle = np.arccos(np.dot(v1_u, v2_u))
+  #   if np.isnan(angle):
+  #     if (v1_u == v2_u).all():
+  #       return 0.0
+  #     else:
+  #       return np.pi
+  #   return angle
+
   def getCurrentImage(self):
-    start = time.clock()
+    # start = time.clock()
     self.SetCurrent(self.context)
     # Export to PNG
     size = self.GetClientSize()
@@ -381,7 +412,10 @@ class AtomsCanvas(glcanvas.GLCanvas):
   def OnDraw(self):
     self.SetCurrent(self.context)
     if (not bool(glCheckFramebufferStatus)) or glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
+      start = time.clock()
       # clear color and depth buffers
+      glClearDepth(1.0);
+      glClearColor(1,1,1,1);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
       glLoadIdentity();
@@ -395,7 +429,7 @@ class AtomsCanvas(glcanvas.GLCanvas):
 
       # Default color
       color = [1, 1, 1, 1]
-      glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
+      glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
 
       colors = {
         'vertex': [1, 1, 1, 1],
@@ -424,7 +458,6 @@ class AtomsCanvas(glcanvas.GLCanvas):
             atoms[atom_id] = self.atoms[atom_id]
 
       atoms = self.centerObject(atoms)
-
       for atom_id, atom in atoms.iteritems():
         x, y, z = atom
 
@@ -434,19 +467,22 @@ class AtomsCanvas(glcanvas.GLCanvas):
           atom_color = colors[self.atoms_type[atom_id]]
           if atom_color != color:
             color = atom_color
-            glMaterialfv(GL_FRONT,GL_DIFFUSE,color)
+            glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
 
           glutSolidSphere(0.2, 15, 15)
         else:
           dataset = self.dataset[self.currentT]['atoms']
           vector = dataset[atom_id]
-          self.drawVector(vector)
+          self.drawVector(vector, atom_id)
 
         glTranslate(-x, -y, -z)
-
       glPopMatrix()
 
       # push into visible buffer
       self.SwapBuffers()
 
       self.Refresh(False)
+      # print "draw %d atoms: %f" % (len(atoms), time.clock() - start)
+
+      wx.CallAfter(self.parent.axesD.update)
+      wx.CallAfter(self.parent.axesV.update)
