@@ -414,8 +414,8 @@ class AtomsCanvas(glcanvas.GLCanvas):
     if (not bool(glCheckFramebufferStatus)) or glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE:
       start = time.clock()
       # clear color and depth buffers
-      glClearDepth(1.0);
-      glClearColor(1,1,1,1);
+      # glClearDepth(1.0);
+      # glClearColor(1,1,1,1);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
       glLoadIdentity();
